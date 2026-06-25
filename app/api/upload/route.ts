@@ -1,13 +1,14 @@
 /**
  * POST /api/upload
- * 接收 base64 图片，保存到 data/uploads/，返回可访问 URL
- *
+ * 接收 base64 图片，自动生成同尺寸白色蒙版图，保存到 data/uploads/
+ * 返回原图和蒙版图两路 URL
  * 说明：不在 public/ 下写入是因为 Next.js 生产模式不会服务运行时新增的文件。
  */
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import sharp from "sharp";
 
 const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
 
@@ -22,7 +23,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // 解析 base64 data URL
     const matches = image.match(/^data:([^;]+);base64,(.+)$/);
     if (!matches) {
       return NextResponse.json(
@@ -31,38 +31,92 @@ export async function POST(request: Request) {
       );
     }
 
-    const mime = matches[1]; // image/png, image/jpeg, etc.
+    const mime = matches[1];
     const pure = matches[2];
     const ext = mime.split("/")[1] || "png";
-    const buffer = Buffer.from(pure, "base64");
+    let buffer = Buffer.from(pure, "base64");
 
-    // 限制文件大小：最大 5MB
-    if (buffer.length > 5 * 1024 * 1024) {
+    if (buffer.length > 10 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, message: "图片大小不能超过 5MB" },
+        { success: false, message: "图片大小不能超过 10MB" },
         { status: 400 }
       );
     }
 
-    // 生成唯一文件名
-    const filename = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    // 获取原图尺寸，同时生成白色蒙版图
+    const metadata = await sharp(Uint8Array.from(buffer)).metadata();
+    const width = metadata.width || 1024;
+    const height = metadata.height || 1024;
+
+    // 对超大/超小图等比缩放
+    const MIN_SIDE = 400;
+    const MAX_SIDE = 7000;
+    const longSide = Math.max(width, height);
+    const shortSide = Math.min(width, height);
+    let finalW = width;
+    let finalH = height;
+
+    if (shortSide < MIN_SIDE) {
+      const scale = MIN_SIDE / shortSide;
+      finalW = Math.round(width * scale);
+      finalH = Math.round(height * scale);
+    }
+    if (longSide > MAX_SIDE) {
+      const scale = MAX_SIDE / longSide;
+      finalW = Math.round(finalW * scale);
+      finalH = Math.round(finalH * scale);
+    }
+
+    if (finalW !== width || finalH !== height) {
+      const resized = await sharp(Uint8Array.from(buffer))
+        .resize(finalW, finalH, { fit: "inside" })
+        .toFormat(ext === "jpg" ? "jpeg" : (ext as "png" | "jpeg" | "webp"))
+        .toBuffer();
+      buffer = Buffer.from(resized);
+    }
+
+    // 生成白色蒙版图（与原图同尺寸）
+    const rawMask = await sharp({
+      create: {
+        width: finalW,
+        height: finalH,
+        channels: 3,
+        background: { r: 255, g: 255, b: 255 },
+      },
+    })
+      .toFormat("png")
+      .toBuffer();
+    const maskBuffer = Buffer.from(rawMask);
 
     // 确保目录存在
     await mkdir(UPLOADS_DIR, { recursive: true });
 
-    // 写入文件
-    await writeFile(path.join(UPLOADS_DIR, filename), buffer);
+    // 写入原图
+    const baseId = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    const baseFilename = `base_${baseId}.${ext}`;
+    await writeFile(path.join(UPLOADS_DIR, baseFilename), buffer);
 
-    // 构建公网 URL（通过 /api/uploads/ 路由提供服务）
+    // 写入蒙版
+    const maskFilename = `mask_${baseId}.png`;
+    await writeFile(path.join(UPLOADS_DIR, maskFilename), maskBuffer);
+
+    // 构建公网 URL
     const host = request.headers.get("host") || "localhost:3000";
-    // 优先用 nginx 转发的协议头，其次看是否 localhost，默认 http
     const forwardedProto = request.headers.get("x-forwarded-proto");
     const protocol = forwardedProto
       || (host.startsWith("localhost") ? "http" : "https");
-    const url = `${protocol}://${host}/api/uploads/${filename}`;
-    console.log("[upload] 图片上传完成，URL:", url);
+    const baseUrl = `${protocol}://${host}/api/uploads/${baseFilename}`;
+    const maskUrl = `${protocol}://${host}/api/uploads/${maskFilename}`;
 
-    return NextResponse.json({ success: true, url, filename });
+    console.log("[upload] 图片+蒙版上传完成:", baseUrl);
+
+    return NextResponse.json({
+      success: true,
+      baseUrl,
+      maskUrl,
+      width: finalW,
+      height: finalH,
+    });
   } catch (err: any) {
     console.error("上传失败:", err);
     return NextResponse.json(
