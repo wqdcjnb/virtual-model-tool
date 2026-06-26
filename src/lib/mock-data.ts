@@ -36,44 +36,8 @@ export interface TryOnResult {
   createdAt: string;
 }
 
-export const AI_MODELS = [
-  {
-    id: 'flux-1-pro',
-    name: 'FLUX.1 Pro',
-    provider: 'Black Forest Labs',
-    description: '当前最强写实人像生成模型，皮肤纹理和光影效果极佳',
-    quality: 'ultra-hd',
-    speed: 'medium',
-    recommended: true,
-  },
-  {
-    id: 'sd-35-large',
-    name: 'Stable Diffusion 3.5 Large',
-    provider: 'Stability AI',
-    description: '优秀的通用图像生成模型，人像质量高，支持精细控制',
-    quality: 'high',
-    speed: 'fast',
-    recommended: false,
-  },
-  {
-    id: 'idm-vton',
-    name: 'IDM-VTON',
-    provider: 'Yisol',
-    description: '当前最佳虚拟试衣专用模型，服装贴合度和真实感最强',
-    quality: 'ultra-hd',
-    speed: 'medium',
-    recommended: true,
-  },
-  {
-    id: 'catvton',
-    name: 'CatVTON',
-    provider: 'Zhuanzhuang',
-    description: '轻量高效的试衣模型，速度快且效果稳定',
-    quality: 'high',
-    speed: 'fast',
-    recommended: false,
-  },
-];
+// AI_MODELS & TRYON_MODELS are exported from ai-service.ts (DashScope real models)
+// import { AI_MODELS, TRYON_MODELS } from '@/lib/ai-service'
 
 export const defaultModels: Model[] = [
   {

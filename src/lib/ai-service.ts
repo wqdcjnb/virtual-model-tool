@@ -1,5 +1,5 @@
 // AI Service Layer - Real DashScope API integration
-// Uses wan2.7 / qwen-image for model generation, aitryon-plus for virtual try-on
+// Uses wan2.7 / qwen-image for model generation, aitryon-plus / aitryon for virtual try-on
 
 import {
   type Model,
@@ -9,7 +9,13 @@ import {
   defaultGarments,
   defaultResults,
 } from "./mock-data";
-import { MODEL_CONFIGS, DEFAULT_MODEL, getModelConfig } from "./constants";
+import {
+  MODEL_CONFIGS,
+  DEFAULT_MODEL,
+  getModelConfig,
+  TRYON_MODEL_CONFIGS,
+  DEFAULT_TRYON_MODEL,
+} from "./constants";
 import { buildModelPrompt } from "./prompt-builder";
 import type { ModelFormFields } from "./types";
 
@@ -52,7 +58,7 @@ async function pollTask(taskId: string): Promise<string[]> {
   throw new Error("任务超时：生成时间超过 5 分钟");
 }
 
-// ---- AI_MODELS (updated with DashScope models) ----
+// ---- AI_MODELS (DashScope model generation models) ----
 
 export const AI_MODELS = MODEL_CONFIGS.map((m) => ({
   id: m.id,
@@ -64,6 +70,17 @@ export const AI_MODELS = MODEL_CONFIGS.map((m) => ({
   recommended: m.id === DEFAULT_MODEL,
   supportsImageToImage: m.supportsImageToImage,
   maxImages: m.maxImages,
+}));
+
+// ---- TRYON_MODELS (DashScope virtual try-on models) ----
+
+export const TRYON_MODELS = TRYON_MODEL_CONFIGS.map((m) => ({
+  id: m.id,
+  name: m.name,
+  provider: m.provider,
+  description: m.description,
+  quality: m.quality,
+  recommended: m.recommended,
 }));
 
 // ---- Helpers to map between old and new params ----
@@ -118,6 +135,7 @@ export async function generateModel(params: {
   bodyType: string;
   hairStyle: string;
   additionalPrompt?: string;
+  modelId?: string;
 }): Promise<Model> {
   const fields = mapIdentity(params.ageRange, params.skinTone, params.bodyType);
   fields.gender = params.gender || "";
@@ -131,15 +149,18 @@ export async function generateModel(params: {
     prompt += `, ${params.additionalPrompt}`;
   }
 
+  const selectedModel = params.modelId || DEFAULT_MODEL;
+  const config = getModelConfig(selectedModel);
+
   // Call real API
   const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: DEFAULT_MODEL,
+      model: selectedModel,
       mode: "text-to-image",
       prompt,
-      size: "1024*1024",
+      size: config?.maxResolution || "1024*1024",
       n: 1,
     }),
   });
@@ -184,6 +205,7 @@ export async function generateTryOn(params: {
   modelId: string;
   garmentIds: string[];
   aiModel?: string;
+  tryOnModel?: string;
   resolution?: string;
 }): Promise<TryOnResult> {
   const model = models.find((m) => m.id === params.modelId);
@@ -206,6 +228,7 @@ export async function generateTryOn(params: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      model: params.tryOnModel || DEFAULT_TRYON_MODEL,
       personImageUrl: model.imageUrl,
       topGarmentUrl: topGarment?.imageUrl || undefined,
       bottomGarmentUrl: bottomGarment?.imageUrl || undefined,
@@ -231,7 +254,7 @@ export async function generateTryOn(params: {
     imageUrl,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
-    aiModel: "aitryon-plus",
+    aiModel: params.tryOnModel || DEFAULT_TRYON_MODEL,
     resolution: params.resolution || "2048 x 2048",
     createdAt: new Date().toISOString(),
   };

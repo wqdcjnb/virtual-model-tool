@@ -235,6 +235,44 @@ export const STATUS_LABEL: Record<string, string> = {
 };
 
 // ============================================================
+// 虚拟试衣模型配置
+// ============================================================
+
+export interface TryOnModelConfig {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  quality: string;
+  recommended: boolean;
+}
+
+export const TRYON_MODEL_CONFIGS: TryOnModelConfig[] = [
+  {
+    id: "aitryon-plus",
+    name: "AI 试衣 Plus",
+    provider: "DashScope",
+    description: "高清虚拟试衣，服装贴合度最佳",
+    quality: "ultra-hd",
+    recommended: true,
+  },
+  {
+    id: "aitryon",
+    name: "AI 试衣 基础版",
+    provider: "DashScope",
+    description: "标准虚拟试衣，速度快成本低",
+    quality: "high",
+    recommended: false,
+  },
+];
+
+export const DEFAULT_TRYON_MODEL = "aitryon-plus";
+
+export function getTryOnModelConfig(id: string): TryOnModelConfig | undefined {
+  return TRYON_MODEL_CONFIGS.find((m) => m.id === id);
+}
+
+// ============================================================
 // 虚拟试衣选项
 // ============================================================
 

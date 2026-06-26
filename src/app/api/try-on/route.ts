@@ -1,6 +1,6 @@
 /**
  * POST /api/try-on
- * 创建虚拟试衣任务（aitryon-plus）
+ * 创建虚拟试衣任务（aitryon-plus / aitryon）
  */
 import { NextResponse } from "next/server";
 import { createTryOnTask } from "@/lib/dashscope";
@@ -11,6 +11,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const {
+      model,
       personImageUrl,
       topGarmentUrl,
       bottomGarmentUrl,
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
     // ---- 调用 ----
 
     const { taskId } = await createTryOnTask({
+      model: model || "aitryon-plus",
       personImageUrl,
       topGarmentUrl: topGarmentUrl || undefined,
       bottomGarmentUrl: bottomGarmentUrl || undefined,
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
     });
 
     console.log("[try-on] 任务已创建:", {
+      model: model || "aitryon-plus",
       hasPerson: !!personImageUrl,
       hasTop: !!topGarmentUrl,
       hasBottom: !!bottomGarmentUrl,

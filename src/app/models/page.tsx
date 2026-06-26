@@ -9,7 +9,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listModels, generateModel } from '@/lib/ai-service';
+import { listModels, generateModel, AI_MODELS } from '@/lib/ai-service';
+import { DEFAULT_MODEL } from '@/lib/constants';
 import {
   type Model,
   SKIN_TONES,
@@ -23,6 +24,7 @@ export default function ModelsPage() {
   const [loading, setLoading] = useState(true);
   const [showGenerator, setShowGenerator] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL);
   const [form, setForm] = useState({
     gender: 'female',
     ageRange: AGE_RANGES[1],
@@ -46,7 +48,7 @@ export default function ModelsPage() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      await generateModel(form);
+      await generateModel({ ...form, modelId: selectedModelId });
       refreshModels();
       setShowGenerator(false);
     } catch (err) {
@@ -154,6 +156,31 @@ export default function ModelsPage() {
 
             {/* Form */}
             <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* AI Model Selector */}
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">AI 模型</label>
+                <select
+                  value={selectedModelId}
+                  onChange={(e) => setSelectedModelId(e.target.value)}
+                  className="w-full rounded-lg bg-accent/30 border border-border px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <optgroup label="推荐 — 支持文生图+图生图">
+                    {AI_MODELS.filter((m) => m.supportsImageToImage).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} {m.recommended ? '⭐' : ''} — {m.description}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="轻量 — 纯文生图">
+                    {AI_MODELS.filter((m) => !m.supportsImageToImage).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} — {m.description}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
               {/* Gender */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1.5 block">性别</label>

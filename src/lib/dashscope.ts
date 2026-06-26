@@ -51,6 +51,7 @@ export interface ModelGenParams {
 }
 
 export interface TryOnParams {
+  model?: string;
   personImageUrl: string;
   topGarmentUrl?: string;
   bottomGarmentUrl?: string;
@@ -217,6 +218,7 @@ export async function createTryOnTask(
   params: TryOnParams
 ): Promise<{ taskId: string }> {
   const {
+    model = "aitryon-plus",
     personImageUrl,
     topGarmentUrl,
     bottomGarmentUrl,
@@ -224,8 +226,12 @@ export async function createTryOnTask(
     restoreFace = true,
   } = params;
 
+  if (!["aitryon-plus", "aitryon"].includes(model)) {
+    throw new Error(`不支持的试衣模型: ${model}，可选: aitryon-plus / aitryon`);
+  }
+
   const body = {
-    model: "aitryon-plus",
+    model,
     input: {
       person_image_url: personImageUrl,
       ...(topGarmentUrl ? { top_garment_url: topGarmentUrl } : {}),
