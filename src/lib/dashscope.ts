@@ -91,7 +91,7 @@ interface QueryTaskResponse {
  */
 export async function createModelGenerationTask(
   params: ModelGenParams
-): Promise<{ taskId: string }> {
+): Promise<{ taskId: string; results?: string[] }> {
   const config = getModelConfig(params.model);
   if (!config) {
     throw new Error(`未知模型: ${params.model}`);
