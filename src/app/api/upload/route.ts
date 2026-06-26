@@ -66,19 +66,32 @@ export async function POST(request: Request) {
       finalH = Math.round(finalH * scale);
     }
 
-    // 转为 PNG 并压缩（统一格式，优化大小）
-    if (finalW !== width || finalH !== height || ext !== "png") {
-      const resized = await sharp(Uint8Array.from(buffer))
+    // 保持原格式（JPEG→JPEG，PNG→PNG），只缩放不换格式
+    // 避免 PNG 转照片导致文件过大（>5MB）被 DashScope 拒绝
+    const outputFormat: "jpeg" | "png" | "webp" =
+      ext === "jpg" || ext === "jpeg" ? "jpeg" :
+      ext === "webp" ? "webp" : "png";
+
+    if (finalW !== width || finalH !== height) {
+      buffer = Buffer.from(await sharp(Uint8Array.from(buffer))
         .resize(finalW, finalH, { fit: "inside" })
-        .toFormat("png", { quality: 90, effort: 6 })
-        .toBuffer();
-      buffer = Buffer.from(resized);
-    } else {
-      // 即使尺寸不变也优化 PNG
-      const optimized = await sharp(Uint8Array.from(buffer))
-        .toFormat("png", { quality: 90, effort: 6 })
-        .toBuffer();
-      buffer = Buffer.from(optimized);
+        .toFormat(outputFormat, outputFormat === "jpeg" ? { quality: 85 } : {})
+        .toBuffer());
+    }
+
+    // 如果 JPEG > 3MB，降低质量到 5MB 以下
+    if (outputFormat === "jpeg" && buffer.length > 3 * 1024 * 1024) {
+      buffer = Buffer.from(await sharp(Uint8Array.from(buffer))
+        .jpeg({ quality: 60 })
+        .toBuffer());
+    }
+
+    // 最终兜底：超过 5MB 拒绝
+    if (buffer.length > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, message: "图片处理后仍超 5MB，请上传较小的图片" },
+        { status: 400 }
+      );
     }
 
     // 确保目录存在
