@@ -1,16 +1,15 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // 允许外部图片（DashScope 返回的结果图）
+  // outputFileTracingRoot: path.resolve(__dirname, '../../'),  // Uncomment and add 'import path from "path"' if needed
+  /* config options here */
+  allowedDevOrigins: ['*.dev.coze.site'],
   images: {
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "dashscope-result-sh.oss-cn-shanghai.aliyuncs.com",
-      },
-      {
-        protocol: "https",
-        hostname: "dashscope-result-bj.oss-cn-beijing.aliyuncs.com",
+        protocol: 'https',
+        hostname: '*',
+        pathname: '/**',
       },
     ],
   },

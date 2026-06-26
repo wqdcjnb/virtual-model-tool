@@ -1,0 +1,244 @@
+// ============================================================
+// 常量：下拉选项、比例映射、状态标签、模型配置
+// ============================================================
+import type { ModelConfig } from "./types";
+
+// ============================================================
+// 模型配置表
+// ============================================================
+
+export const MODEL_CONFIGS: ModelConfig[] = [
+  // ---- 推荐组（支持图生图）----
+  {
+    id: "wan2.7-image-pro",
+    name: "Wan2.7 Pro",
+    group: "recommended",
+    endpoint: "multimodal-generation",
+    maxResolution: "4096*4096",
+    maxImages: 4,
+    supportsImageToImage: true,
+    description: "旗舰版，4K 高清，支持文生图+图生图",
+  },
+  {
+    id: "wan2.7-image",
+    name: "Wan2.7",
+    group: "recommended",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 4,
+    supportsImageToImage: true,
+    description: "均衡版，2K 高清，支持文生图+图生图",
+  },
+  {
+    id: "wan2.6-image",
+    name: "Wan2.6",
+    group: "recommended",
+    endpoint: "multimodal-generation",
+    maxResolution: "1440*1440",
+    maxImages: 4,
+    supportsImageToImage: true,
+    description: "性价比之选，支持文生图+图生图",
+  },
+  {
+    id: "qwen-image-2.0-pro",
+    name: "Qwen-Image Pro",
+    group: "recommended",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 6,
+    supportsImageToImage: true,
+    description: "Qwen 旗舰，最多 6 张，支持图生图",
+  },
+  {
+    id: "qwen-image-2.0",
+    name: "Qwen-Image",
+    group: "recommended",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 6,
+    supportsImageToImage: true,
+    description: "Qwen 均衡版，最多 6 张，支持图生图",
+  },
+  // ---- 轻量组（纯文生图）----
+  {
+    id: "qwen-image-max",
+    name: "Qwen-Image Max",
+    group: "lightweight",
+    endpoint: "text2image",
+    maxResolution: "1664*928",
+    maxImages: 1,
+    supportsImageToImage: false,
+    description: "快速文生图",
+  },
+  {
+    id: "qwen-image-plus",
+    name: "Qwen-Image Plus",
+    group: "lightweight",
+    endpoint: "text2image",
+    maxResolution: "1664*928",
+    maxImages: 1,
+    supportsImageToImage: false,
+    description: "轻量文生图",
+  },
+  {
+    id: "z-image-turbo",
+    name: "Z-Image Turbo",
+    group: "lightweight",
+    endpoint: "text2image",
+    maxResolution: "2048*2048",
+    maxImages: 1,
+    supportsImageToImage: false,
+    description: "极速写实人像生成",
+  },
+  {
+    id: "wan2.6-t2i",
+    name: "Wan2.6 T2I",
+    group: "lightweight",
+    endpoint: "text2image",
+    maxResolution: "1440*1440",
+    maxImages: 4,
+    supportsImageToImage: false,
+    description: "经典文生图",
+  },
+];
+
+/** 默认模型 */
+export const DEFAULT_MODEL = "wan2.7-image-pro";
+
+/** 根据 ID 查找模型配置 */
+export function getModelConfig(id: string): ModelConfig | undefined {
+  return MODEL_CONFIGS.find((m) => m.id === id);
+}
+
+/** 获取分组后的模型选项（用于 <optgroup>） */
+export function getGroupedModelOptions(): {
+  group: string;
+  label: string;
+  models: ModelConfig[];
+}[] {
+  return [
+    {
+      group: "recommended",
+      label: "推荐 — 支持文生图+图生图",
+      models: MODEL_CONFIGS.filter((m) => m.group === "recommended"),
+    },
+    {
+      group: "lightweight",
+      label: "轻量 — 纯文生图",
+      models: MODEL_CONFIGS.filter((m) => m.group === "lightweight"),
+    },
+  ];
+}
+
+// ============================================================
+// 出图比例选项
+// ============================================================
+
+export const ASPECT_RATIOS = [
+  { value: "3:4", label: "3:4 (竖版)" },
+  { value: "1:1", label: "1:1 (正方形)" },
+  { value: "4:3", label: "4:3 (横版)" },
+  { value: "9:16", label: "9:16 (竖版全屏)" },
+  { value: "16:9", label: "16:9 (横版全屏)" },
+];
+
+/** 比例 -> wan2.7 系列 size 字符串映射 */
+export const ASPECT_RATIO_SIZE_MAP: Record<string, string> = {
+  "1:1": "1024*1024",
+  "3:4": "960*1280",
+  "4:3": "1280*960",
+  "9:16": "720*1280",
+  "16:9": "1280*720",
+};
+
+/** 比例 -> text2image 端点 size 映射 */
+export const ASPECT_RATIO_SIZE_MAP_T2I: Record<string, string> = {
+  "1:1": "1024*1024",
+  "3:4": "960*1280",
+  "4:3": "1280*960",
+  "9:16": "720*1280",
+  "16:9": "1280*720",
+};
+
+// ============================================================
+// 模特生成字段选项
+// ============================================================
+
+export const GENDER_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "male", label: "男" },
+  { value: "female", label: "女" },
+];
+
+export const AGE_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "teenager", label: "青少年" },
+  { value: "youth", label: "青年" },
+  { value: "middle-aged", label: "中年" },
+  { value: "elderly", label: "老年" },
+];
+
+export const RACE_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "asian", label: "亚洲" },
+  { value: "european", label: "欧美" },
+];
+
+export const BODY_SIZE_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "slim", label: "纤细" },
+  { value: "standard", label: "标准" },
+  { value: "curvy", label: "丰满" },
+  { value: "muscular", label: "肌肉" },
+];
+
+export const IDENTITY_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "student", label: "学生" },
+  { value: "office", label: "上班族" },
+  { value: "artist", label: "艺术家" },
+  { value: "athlete", label: "运动员" },
+];
+
+export const SCENE_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "studio", label: "摄影棚" },
+  { value: "street", label: "街景" },
+  { value: "park", label: "公园" },
+  { value: "beach", label: "海滩" },
+  { value: "office", label: "办公室" },
+  { value: "cafe", label: "咖啡馆" },
+  { value: "library", label: "图书馆" },
+  { value: "city", label: "城市" },
+  { value: "home", label: "居家" },
+];
+
+export const POSE_OPTIONS = [
+  { value: "", label: "不限" },
+  { value: "standing", label: "站立" },
+  { value: "sitting", label: "坐姿" },
+  { value: "walking", label: "行走" },
+  { value: "dynamic", label: "动态" },
+];
+
+export const QUANTITY_OPTIONS = [1, 2, 3, 4];
+
+// ============================================================
+// 任务状态标签
+// ============================================================
+
+export const STATUS_LABEL: Record<string, string> = {
+  PENDING: "排队中...",
+  RUNNING: "AI 生成中...",
+  SUCCEEDED: "完成",
+  FAILED: "失败",
+};
+
+// ============================================================
+// 虚拟试衣选项
+// ============================================================
+
+export const TRYON_RESOLUTIONS = [
+  { value: "1K", label: "1K (标准)" },
+  { value: "2K", label: "2K (高清)" },
+];
