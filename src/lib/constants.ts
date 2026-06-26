@@ -19,14 +19,14 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "旗舰版，4K 高清，支持文生图+图生图",
   },
   {
-    id: "wan2.7-image",
-    name: "Wan2.7",
+    id: "qwen-image-2.0-pro",
+    name: "Qwen-Image Pro",
     group: "recommended",
     endpoint: "multimodal-generation",
     maxResolution: "2048*2048",
-    maxImages: 4,
+    maxImages: 6,
     supportsImageToImage: true,
-    description: "均衡版，2K 高清，支持文生图+图生图",
+    description: "Qwen 旗舰，最多 6 张，支持文生图+图生图",
   },
 ];
 
