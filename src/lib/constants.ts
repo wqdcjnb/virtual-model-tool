@@ -210,6 +210,7 @@ export function getTryOnModelConfig(id: string): TryOnModelConfig | undefined {
 // ============================================================
 
 export const TRYON_RESOLUTIONS = [
-  { value: "1K", label: "1K (标准)" },
-  { value: "2K", label: "2K (高清)" },
+  { value: "1024", label: "1024 (576×1024 标准)" },
+  { value: "1280", label: "1280 (720×1280 高清)" },
+  { value: "-1", label: "原图尺寸" },
 ];

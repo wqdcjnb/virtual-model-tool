@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { createTryOnTask } from "@/lib/dashscope";
 
-const VALID_RESOLUTIONS = ["1K", "2K"];
+const VALID_RESOLUTIONS = [-1, 1024, 1280];
 
 export async function POST(request: Request) {
   try {
@@ -35,9 +35,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (resolution && !VALID_RESOLUTIONS.includes(resolution)) {
+    const resNum = resolution !== undefined ? Number(resolution) : 1024;
+    if (resolution !== undefined && !VALID_RESOLUTIONS.includes(resNum)) {
       return NextResponse.json(
-        { success: false, message: `无效的分辨率: ${resolution}，支持 1K / 2K` },
+        { success: false, message: `无效的分辨率: ${resolution}，支持 -1 / 1024 / 1280` },
         { status: 400 }
       );
     }
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       personImageUrl,
       topGarmentUrl: topGarmentUrl || undefined,
       bottomGarmentUrl: bottomGarmentUrl || undefined,
-      resolution: resolution || "1K",
+      resolution: resNum,
       restoreFace: restoreFace !== undefined ? Boolean(restoreFace) : true,
     });
 

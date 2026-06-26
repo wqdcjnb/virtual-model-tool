@@ -277,7 +277,7 @@ export async function generateTryOn(params: {
       personImageUrl: absoluteUrl(model.imageUrl),
       topGarmentUrl: absoluteUrl(topGarment?.imageUrl || ""),
       bottomGarmentUrl: absoluteUrl(bottomGarment?.imageUrl || ""),
-      resolution: params.resolution === "4096 x 4096" ? "2K" : "1K",
+      resolution: params.resolution === "4096 x 4096" ? 1280 : 1024,
       restoreFace: true,
     }),
   });

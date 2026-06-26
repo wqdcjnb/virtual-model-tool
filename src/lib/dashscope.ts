@@ -55,7 +55,7 @@ export interface TryOnParams {
   personImageUrl: string;
   topGarmentUrl?: string;
   bottomGarmentUrl?: string;
-  resolution?: string;
+  resolution?: number;
   restoreFace?: boolean;
 }
 
@@ -260,7 +260,7 @@ export async function createTryOnTask(
     personImageUrl,
     topGarmentUrl,
     bottomGarmentUrl,
-    resolution = "1K",
+    resolution = 1024,
     restoreFace = true,
   } = params;
 
