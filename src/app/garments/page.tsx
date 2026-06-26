@@ -25,6 +25,8 @@ export default function GarmentsPage() {
     category: 'top' as Garment['category'],
     color: '',
     style: '',
+    imagePreview: null as string | null,
+    imageFile: null as File | null,
   });
 
   const refreshGarments = () => {
@@ -45,29 +47,35 @@ export default function GarmentsPage() {
   };
 
   const handleUpload = async () => {
-    if (!uploadForm.name || !uploadForm.color) return;
+    if (!uploadForm.name || !uploadForm.color || !uploadForm.imageFile) return;
     setUploading(true);
     try {
-      // In production, this would upload to object storage
-      // For demo, we use a placeholder image
-      const placeholderImages: Record<string, string> = {
-        top: '/images/garments/tshirt-white.jpg',
-        bottom: '/images/garments/jeans-blue.jpg',
-        dress: '/images/garments/dress-black.jpg',
-        shoes: '/images/garments/sneakers-white.jpg',
-        outerwear: '/images/garments/tshirt-white.jpg',
-        accessories: '/images/garments/sneakers-white.jpg',
-      };
+      // Upload image to server
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+      });
+      reader.readAsDataURL(uploadForm.imageFile);
+      const base64 = await base64Promise;
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
       await uploadGarment({
         name: uploadForm.name,
         category: uploadForm.category,
         color: uploadForm.color,
         style: uploadForm.style || '休闲',
-        imageUrl: placeholderImages[uploadForm.category] || '/images/garments/tshirt-white.jpg',
+        imageUrl: data.url,
       });
       refreshGarments();
       setShowUploader(false);
-      setUploadForm({ name: '', category: 'top', color: '', style: '' });
+      setUploadForm({ name: '', category: 'top', color: '', style: '', imagePreview: null, imageFile: null });
     } catch (err) {
       console.error('Upload failed:', err);
     } finally {
@@ -196,11 +204,36 @@ export default function GarmentsPage() {
             {/* Form */}
             <div className="px-6 py-4 space-y-4">
               {/* Upload Area */}
-              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-foreground font-medium">点击或拖拽上传服装图片</p>
-                <p className="text-[10px] text-muted-foreground mt-1">支持 JPG、PNG，建议白色背景</p>
-              </div>
+              {uploadForm.imagePreview ? (
+                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-border">
+                  <img src={uploadForm.imagePreview} alt="" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setUploadForm({ ...uploadForm, imagePreview: null, imageFile: null })}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                  <p className="text-xs text-foreground font-medium">点击上传服装图片</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">支持 JPG、PNG，建议白色背景</p>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        const r = new FileReader();
+                        r.onload = () => setUploadForm({ ...uploadForm, imagePreview: r.result as string, imageFile: f });
+                        r.readAsDataURL(f);
+                      }
+                    }}
+                  />
+                </label>
+              )}
 
               {/* Name */}
               <div>
@@ -271,7 +304,7 @@ export default function GarmentsPage() {
               </button>
               <button
                 onClick={handleUpload}
-                disabled={uploading || !uploadForm.name || !uploadForm.color}
+                disabled={uploading || !uploadForm.name || !uploadForm.color || !uploadForm.imageFile}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {uploading ? (
