@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,7 +13,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MODEL_CONFIGS } from '@/lib/constants';
+import { MODEL_CONFIGS, DEFAULT_MODEL } from '@/lib/constants';
+
+// Simple shared store for selected model
+let _selectedModel = DEFAULT_MODEL;
+const listeners = new Set<() => void>();
+export function getSelectedModel() { return _selectedModel; }
+export function setSelectedModel(id: string) { _selectedModel = id; listeners.forEach(fn => fn()); }
+export function onModelChange(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 
 const navItems = [
   { href: '/', label: '工作台', icon: LayoutDashboard },
@@ -25,6 +33,8 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [selected, setSelected] = useState(_selectedModel);
+  useEffect(() => onModelChange(() => setSelected(_selectedModel)), []);
 
   return (
     <aside className="hidden md:flex flex-col w-60 border-r border-border bg-sidebar shrink-0">
@@ -66,14 +76,24 @@ export function Sidebar() {
 
       {/* Bottom section */}
       <div className="px-3 py-4 border-t border-border">
-        <div className="px-3 py-2.5 rounded-lg bg-accent/30">
-          <p className="text-xs text-muted-foreground mb-1.5">AI Models</p>
-          {MODEL_CONFIGS.map((m) => (
-            <div key={m.id} className="flex items-center gap-1.5 mt-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-foreground">{m.name}</span>
-            </div>
-          ))}
+        <div className="px-2 py-2 rounded-lg bg-accent/30">
+          <p className="text-[10px] text-muted-foreground mb-2 px-1">AI 模型</p>
+          {MODEL_CONFIGS.map((m) => {
+            const active = selected === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => { setSelectedModel(m.id); setSelected(m.id); }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-2 py-1.5 rounded text-left transition-colors',
+                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                )}
+              >
+                <span className={cn('w-1.5 h-1.5 rounded-full', active ? 'bg-primary' : 'bg-muted-foreground/40')} />
+                <span className="text-[11px] font-medium">{m.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </aside>

@@ -13,16 +13,17 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { downloadImage } from '@/lib/download';
-import { listModels, listGarments, generateTryOn, AI_MODELS } from '@/lib/ai-service';
+import { listModels, listGarments, generateTryOn } from '@/lib/ai-service';
 import { CATEGORY_LABELS, type Model, type Garment } from '@/lib/mock-data';
-import { DEFAULT_MODEL, ASPECT_RATIOS } from '@/lib/constants';
+import { ASPECT_RATIOS } from '@/lib/constants';
+import { getSelectedModel, onModelChange } from '@/components/sidebar';
 
 export default function StudioPage() {
   const [models, setModels] = useState<Model[]>([]);
   const [garments, setGarments] = useState<Garment[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [selectedGarments, setSelectedGarments] = useState<Garment[]>([]);
-  const [selectedGenModel, setSelectedGenModel] = useState(DEFAULT_MODEL);
+  const [selectedGenModel, setSelectedGenModel] = useState(getSelectedModel());
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -35,6 +36,7 @@ export default function StudioPage() {
   useEffect(() => {
     listModels().then(setModels);
     listGarments().then(setGarments);
+    return onModelChange(() => setSelectedGenModel(getSelectedModel()));
   }, []);
 
   const toggleGarment = useCallback((garment: Garment) => {
@@ -97,15 +99,6 @@ export default function StudioPage() {
           <h1 className="text-sm font-semibold text-foreground">试衣工作室</h1>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={selectedGenModel}
-            onChange={(e) => setSelectedGenModel(e.target.value)}
-            className="text-xs bg-accent/50 border border-border rounded-lg px-2.5 py-1.5 text-foreground outline-none focus:ring-1 focus:ring-primary"
-          >
-            {AI_MODELS.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -159,7 +152,7 @@ export default function StudioPage() {
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground">AI正在生成试衣效果...</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  使用 {AI_MODELS.find(m => m.id === selectedGenModel)?.name || selectedGenModel} 模型
+                  使用 {selectedGenModel} 模型
                 </p>
               </div>
               {/* Progress bar */}
