@@ -12,6 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MODEL_CONFIGS } from '@/lib/constants';
 
 const navItems = [
   { href: '/', label: '工作台', icon: LayoutDashboard },
@@ -66,12 +67,13 @@ export function Sidebar() {
       {/* Bottom section */}
       <div className="px-3 py-4 border-t border-border">
         <div className="px-3 py-2.5 rounded-lg bg-accent/30">
-          <p className="text-xs text-muted-foreground">AI Models</p>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs text-foreground">FLUX.1 Pro</span>
-            <span className="text-[10px] text-muted-foreground ml-auto">IDM-VTON</span>
-          </div>
+          <p className="text-xs text-muted-foreground mb-1.5">AI Models</p>
+          {MODEL_CONFIGS.map((m) => (
+            <div key={m.id} className="flex items-center gap-1.5 mt-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[11px] text-foreground">{m.name}</span>
+            </div>
+          ))}
         </div>
       </div>
     </aside>
