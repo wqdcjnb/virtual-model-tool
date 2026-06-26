@@ -9,6 +9,17 @@ import type { ModelConfig } from "./types";
 
 export const MODEL_CONFIGS: ModelConfig[] = [
   {
+    id: "nano-banana-pro",
+    name: "Nano Banana Pro",
+    group: "recommended",
+    platform: "cqt",
+    endpoint: "cqt-nano",
+    maxResolution: "1024*1024",
+    maxImages: 4,
+    supportsImageToImage: true,
+    description: "CQT 加强版，快速高质量",
+  },
+  {
     id: "wan2.7-image-pro",
     name: "Wan2.7 Pro",
     group: "recommended",
@@ -30,32 +41,10 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     supportsImageToImage: true,
     description: "DashScope Qwen 旗舰，最多 6 张",
   },
-  {
-    id: "flux-kontext-max",
-    name: "FLUX Kontext Max",
-    group: "recommended",
-    platform: "cqt",
-    endpoint: "cqt-flux",
-    maxResolution: "2048*2048",
-    maxImages: 4,
-    supportsImageToImage: true,
-    description: "CQT FLUX 最强版，写实人像顶尖",
-  },
-  {
-    id: "nano-banana-pro",
-    name: "Nano Banana Pro",
-    group: "lightweight",
-    platform: "cqt",
-    endpoint: "cqt-nano",
-    maxResolution: "1024*1024",
-    maxImages: 4,
-    supportsImageToImage: true,
-    description: "CQT 轻量加强版，快速生成",
-  },
 ];
 
 /** 默认模型 */
-export const DEFAULT_MODEL = "flux-kontext-max";
+export const DEFAULT_MODEL = "nano-banana-pro";
 
 /** 根据 ID 查找模型配置 */
 export function getModelConfig(id: string): ModelConfig | undefined {
