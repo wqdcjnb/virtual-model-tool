@@ -104,11 +104,11 @@ export async function createModelGenerationTask(
   }
 }
 
-/** 多模态端点（推荐组） */
+/** 多模态端点（推荐组）— 同步模式，直接返回结果图片 URL */
 async function createMultimodalTask(
   params: ModelGenParams,
   config: ModelConfig
-): Promise<{ taskId: string }> {
+): Promise<{ taskId: string; results?: string[] }> {
   const { mode, prompt, referenceImageUrl, size, n = 1 } = params;
 
   // 构建 messages content 数组
@@ -133,11 +133,11 @@ async function createMultimodalTask(
     parameters: {
       size: size || config.maxResolution,
       n: Math.min(n, config.maxImages),
-      thinking_mode: "disabled",
     },
   };
 
-  const res = await fetch(MULTIMODAL_URL, {
+  // 先尝试异步模式
+  let res = await fetch(MULTIMODAL_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey()}`,
@@ -147,7 +147,45 @@ async function createMultimodalTask(
     body: JSON.stringify(body),
   });
 
-  const data: CreateTaskResponse = await res.json();
+  let data: CreateTaskResponse = await res.json();
+
+  // 异步不支持则回退同步
+  if (data.code === "AccessDenied" && data.message?.includes("asynchronous")) {
+    console.log("[dashscope] 异步不可用，回退同步模式");
+
+    res = await fetch(MULTIMODAL_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const syncData = await res.json();
+
+    // 同步返回格式: { output: { choices: [{ message: { content: [{ image: "url" }] } }] } }
+    if (syncData.code && syncData.code !== "0" && syncData.message) {
+      throw new Error(`[${syncData.code}] ${syncData.message}`);
+    }
+
+    const choices = syncData?.output?.choices;
+    if (choices?.length) {
+      const results = choices.flatMap((c: any) => {
+        const contents = c?.message?.content || [];
+        return contents
+          .filter((item: any) => item.image)
+          .map((item: any) => item.image as string);
+      });
+
+      if (results.length) {
+        console.log("[dashscope] 同步生成成功:", { model: config.id, count: results.length });
+        return { taskId: `sync-${Date.now()}`, results };
+      }
+    }
+
+    throw new Error("同步模式未返回图片");
+  }
 
   if (data.code && data.code !== "0" && data.message) {
     throw new Error(`[${data.code}] ${data.message}`);
@@ -157,7 +195,7 @@ async function createMultimodalTask(
     throw new Error("创建任务失败：未返回 task_id");
   }
 
-  console.log("[dashscope] 多模态任务已创建:", {
+  console.log("[dashscope] 异步任务已创建:", {
     model: config.id,
     taskId: data.output.task_id,
   });

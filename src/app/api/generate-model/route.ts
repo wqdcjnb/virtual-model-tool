@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     // ---- DashScope 平台 ----
-    const { taskId } = await createModelGenerationTask({
+    const result = await createModelGenerationTask({
       model,
       mode: mode || "text-to-image",
       prompt: prompt.trim(),
@@ -86,8 +86,13 @@ export async function POST(request: Request) {
       n: safeN,
     });
 
-    console.log("[generate-model] DashScope 任务:", { model, taskId });
-    return NextResponse.json({ success: true, taskId, platform: "dashscope" });
+    // 同步模式直接返回结果
+    if (result.results?.length) {
+      return NextResponse.json({ success: true, results: result.results, platform: "dashscope" });
+    }
+
+    console.log("[generate-model] DashScope 异步任务:", { model, taskId: result.taskId });
+    return NextResponse.json({ success: true, taskId: result.taskId, platform: "dashscope" });
   } catch (err: any) {
     console.error("创建模特生成任务失败:", err);
     return NextResponse.json(

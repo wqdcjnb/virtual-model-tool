@@ -191,8 +191,15 @@ export async function generateModel(params: {
   const data = await res.json();
   if (!data.success) throw new Error(data.message);
 
-  // Poll for result (pass platform info for CQT)
-  const imageUrls = await pollTask(data.taskId, data.platform, data.group);
+  // 同步模式直接有结果，跳过轮询
+  let imageUrls: string[];
+  if (data.results?.length) {
+    imageUrls = data.results;
+  } else if (data.taskId) {
+    imageUrls = await pollTask(data.taskId, data.platform, data.group);
+  } else {
+    throw new Error("未获取到任务 ID 或结果");
+  }
   const imageUrl = imageUrls[0];
   if (!imageUrl) throw new Error("未获取到生成结果");
 
