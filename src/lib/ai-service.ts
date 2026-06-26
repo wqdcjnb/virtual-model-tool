@@ -311,6 +311,48 @@ export async function listGarments(category?: string): Promise<Garment[]> {
   return [...garments].reverse();
 }
 
+// ---- CRUD: Models ----
+
+export async function updateModelName(id: string, newName: string): Promise<void> {
+  const m = models.find((x) => x.id === id);
+  if (!m) throw new Error("Model not found");
+  m.name = newName;
+}
+
+export async function deleteModel(id: string): Promise<void> {
+  const idx = models.findIndex((x) => x.id === id);
+  if (idx === -1) throw new Error("Model not found");
+  models.splice(idx, 1);
+  // Also clean up results referencing this model
+  results = results.filter((r) => r.modelId !== id);
+}
+
+// ---- CRUD: Garments ----
+
+export async function deleteGarment(id: string): Promise<void> {
+  const idx = garments.findIndex((x) => x.id === id);
+  if (idx === -1) throw new Error("Garment not found");
+  garments.splice(idx, 1);
+  // Remove from results referencing this garment
+  results = results.filter((r) => !r.garmentIds.includes(id));
+}
+
+// ---- CRUD: Results (recycle bin) ----
+
+const RECYCLE_DAYS = 7;
+
+export async function deleteResult(id: string): Promise<void> {
+  results = results.filter((r) => r.id !== id);
+}
+
+/** Auto-clean results older than ${days} days. Called on gallery load. */
+export async function cleanupOldResults(days: number = RECYCLE_DAYS): Promise<number> {
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const before = results.length;
+  results = results.filter((r) => r.createdAt > cutoff);
+  return before - results.length;
+}
+
 /**
  * List all try-on results
  */

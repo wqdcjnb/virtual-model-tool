@@ -8,9 +8,10 @@ import {
   X,
   Loader2,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listGarments, uploadGarment } from '@/lib/ai-service';
+import { listGarments, uploadGarment, deleteGarment } from '@/lib/ai-service';
 import { type Garment, CATEGORY_LABELS } from '@/lib/mock-data';
 
 export default function GarmentsPage() {
@@ -36,6 +37,12 @@ export default function GarmentsPage() {
   useEffect(() => {
     refreshGarments();
   }, []);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`确定删除「${name}」吗？相关试衣作品也会清理。`)) return;
+    await deleteGarment(id);
+    refreshGarments();
+  };
 
   const handleUpload = async () => {
     if (!uploadForm.name || !uploadForm.color) return;
@@ -146,6 +153,12 @@ export default function GarmentsPage() {
                     {CATEGORY_LABELS[garment.category]}
                   </span>
                 </div>
+                <button
+                  onClick={() => handleDelete(garment.id, garment.name)}
+                  className="absolute top-2 right-2 p-1 rounded bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
               </div>
               <div className="p-2.5">
                 <p className="text-xs font-medium text-foreground truncate">{garment.name}</p>

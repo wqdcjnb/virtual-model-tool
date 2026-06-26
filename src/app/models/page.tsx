@@ -9,9 +9,12 @@ import {
   X,
   Sparkles,
   ImagePlus,
+  Trash2,
+  Pencil,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listModels, generateModel, AI_MODELS, uploadGarment } from '@/lib/ai-service';
+import { listModels, generateModel, AI_MODELS, uploadGarment, updateModelName, deleteModel } from '@/lib/ai-service';
 import { DEFAULT_MODEL, getModelConfig, ASPECT_RATIOS } from '@/lib/constants';
 import {
   type Model,
@@ -60,6 +63,10 @@ export default function ModelsPage() {
   const isImg2ImgSupported = config?.supportsImageToImage ?? true;
   const maxQuantity = config?.maxImages || 4;
 
+  // ---- Edit state ----
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+
   const refreshModels = () => {
     listModels().then((data) => {
       setModels(data);
@@ -70,6 +77,19 @@ export default function ModelsPage() {
   useEffect(() => {
     refreshModels();
   }, []);
+
+  const handleRename = async (id: string) => {
+    if (!editName.trim()) return;
+    await updateModelName(id, editName.trim());
+    setEditingId(null);
+    refreshModels();
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`确定删除模特「${name}」吗？相关试衣作品也会被清理。`)) return;
+    await deleteModel(id);
+    refreshModels();
+  };
 
   // Switch mode — auto-fallback if model doesn't support img2img
   const handleModeChange = (mode: GenMode) => {
@@ -255,7 +275,40 @@ export default function ModelsPage() {
                 </div>
               </div>
               <div className="p-3">
-                <p className="text-sm font-medium text-foreground">{model.name}</p>
+                {editingId === model.id ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 px-2 py-1 rounded border border-border bg-accent/30 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(model.id);
+                        if (e.key === 'Escape') setEditingId(null);
+                      }}
+                    />
+                    <button onClick={() => handleRename(model.id)} className="p-1 rounded hover:bg-green-500/10 text-green-500"><Check className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setEditingId(null)} className="p-1 rounded hover:bg-accent/50 text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground truncate flex-1">{model.name}</p>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { setEditingId(model.id); setEditName(model.name); }}
+                        className="p-1 rounded hover:bg-accent/50 text-muted-foreground"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(model.id, model.name)}
+                        className="p-1 rounded hover:bg-red-500/10 text-red-400"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

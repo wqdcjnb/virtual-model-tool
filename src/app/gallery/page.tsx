@@ -9,21 +9,35 @@ import {
   Calendar,
   Cpu,
   Monitor,
+  Trash2,
+  Clock,
 } from 'lucide-react';
-import { listResults } from '@/lib/ai-service';
+import { listResults, deleteResult, cleanupOldResults } from '@/lib/ai-service';
 import type { TryOnResult } from '@/lib/mock-data';
 
 export default function GalleryPage() {
   const [results, setResults] = useState<TryOnResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedResult, setSelectedResult] = useState<TryOnResult | null>(null);
+  const [cleanedCount, setCleanedCount] = useState(0);
+
+  const refreshResults = () => {
+    listResults().then(setResults);
+  };
 
   useEffect(() => {
-    listResults().then((data) => {
+    Promise.all([listResults(), cleanupOldResults(7)]).then(([data, count]) => {
       setResults(data);
+      setCleanedCount(count);
       setLoading(false);
     });
   }, []);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`确定删除「${name}」的试衣作品吗？`)) return;
+    await deleteResult(id);
+    refreshResults();
+  };
 
   const handleDownload = (result: TryOnResult) => {
     const timestamp = new Date(result.createdAt).getTime();
@@ -46,8 +60,12 @@ export default function GalleryPage() {
             浏览和管理你的试衣作品
           </p>
         </div>
-        <div className="text-xs text-muted-foreground">
-          共 {results.length} 件作品
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {cleanedCount > 0 && (
+            <span className="text-amber-400">已清理 {cleanedCount} 件过期作品</span>
+          )}
+          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> 7天自动清理</span>
+          <span>共 {results.length} 件</span>
         </div>
       </div>
 
@@ -98,6 +116,15 @@ export default function GalleryPage() {
                     className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(result.id, result.modelName);
+                    }}
+                    className="p-1.5 rounded-lg bg-red-500/30 backdrop-blur-sm text-white hover:bg-red-500/50 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 {/* AI Model badge */}
