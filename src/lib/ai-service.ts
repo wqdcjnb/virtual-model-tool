@@ -26,6 +26,10 @@ let models = [...defaultModels];
 let garments = [...defaultGarments];
 let results = [...defaultResults];
 
+// Recycle bin — soft-deleted items with deletion timestamp
+interface TrashItem<T> { item: T; deletedAt: string; type: string; }
+let trash: TrashItem<any>[] = [];
+
 let idCounter = 100;
 const generateId = (prefix: string) => `${prefix}-${++idCounter}`;
 
@@ -147,6 +151,7 @@ export async function generateModel(params: {
   refPrompt?: string;
   aspectRatio?: string;
   quantity?: number;
+  customName?: string;
 }): Promise<Model> {
   const fields = mapIdentity(params.ageRange, params.skinTone, params.bodyType);
   fields.gender = params.gender || "";
@@ -213,7 +218,7 @@ export async function generateModel(params: {
 
   const model: Model = {
     id,
-    name: `Model-${models.length + 1}`,
+    name: params.customName?.trim() || `Model-${models.length + 1}`,
     gender: params.gender as Model["gender"],
     ageRange: params.ageRange,
     skinTone: params.skinTone,
@@ -322,9 +327,17 @@ export async function updateModelName(id: string, newName: string): Promise<void
 export async function deleteModel(id: string): Promise<void> {
   const idx = models.findIndex((x) => x.id === id);
   if (idx === -1) throw new Error("Model not found");
-  models.splice(idx, 1);
-  // Also clean up results referencing this model
-  results = results.filter((r) => r.modelId !== id);
+  const [item] = models.splice(idx, 1);
+  trash.push({ item, deletedAt: new Date().toISOString(), type: 'model' });
+  // Also soft-delete results referencing this model
+  const related = results.filter((r) => r.modelId === id);
+  for (const r of related) {
+    const ri = results.findIndex((x) => x.id === r.id);
+    if (ri !== -1) {
+      const [riItem] = results.splice(ri, 1);
+      trash.push({ item: riItem, deletedAt: new Date().toISOString(), type: 'result' });
+    }
+  }
 }
 
 // ---- CRUD: Garments ----
@@ -332,25 +345,70 @@ export async function deleteModel(id: string): Promise<void> {
 export async function deleteGarment(id: string): Promise<void> {
   const idx = garments.findIndex((x) => x.id === id);
   if (idx === -1) throw new Error("Garment not found");
-  garments.splice(idx, 1);
-  // Remove from results referencing this garment
-  results = results.filter((r) => !r.garmentIds.includes(id));
+  const [item] = garments.splice(idx, 1);
+  trash.push({ item, deletedAt: new Date().toISOString(), type: 'garment' });
+  // Soft-delete results referencing this garment
+  const related = results.filter((r) => r.garmentIds.includes(id));
+  for (const r of related) {
+    const ri = results.findIndex((x) => x.id === r.id);
+    if (ri !== -1) {
+      const [riItem] = results.splice(ri, 1);
+      trash.push({ item: riItem, deletedAt: new Date().toISOString(), type: 'result' });
+    }
+  }
 }
 
-// ---- CRUD: Results (recycle bin) ----
+// ---- CRUD: Results ----
+
+export async function deleteResult(id: string): Promise<void> {
+  const idx = results.findIndex((x) => x.id === id);
+  if (idx === -1) throw new Error("Result not found");
+  const [item] = results.splice(idx, 1);
+  trash.push({ item, deletedAt: new Date().toISOString(), type: 'result' });
+}
+
+// ---- Recycle Bin ----
 
 const RECYCLE_DAYS = 7;
 
-export async function deleteResult(id: string): Promise<void> {
-  results = results.filter((r) => r.id !== id);
+export async function listTrash(): Promise<{ model: any[]; garment: any[]; result: any[] }> {
+  // Clean expired items first
+  const cutoff = new Date(Date.now() - RECYCLE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  trash = trash.filter((t) => t.deletedAt > cutoff);
+
+  return {
+    model: trash.filter((t) => t.type === 'model').map((t) => t.item),
+    garment: trash.filter((t) => t.type === 'garment').map((t) => t.item),
+    result: trash.filter((t) => t.type === 'result').map((t) => t.item),
+  };
 }
 
-/** Auto-clean results older than ${days} days. Called on gallery load. */
+export async function restoreTrashItem(type: string, id: string): Promise<void> {
+  const idx = trash.findIndex((t) => t.type === type && t.item.id === id);
+  if (idx === -1) throw new Error("Item not found in trash");
+  const { item } = trash.splice(idx, 1)[0];
+  if (type === 'model') models.push(item);
+  else if (type === 'garment') garments.push(item);
+  else if (type === 'result') results.push(item);
+}
+
+export async function permDeleteTrashItem(type: string, id: string): Promise<void> {
+  trash = trash.filter((t) => !(t.type === type && t.item.id === id));
+}
+
+export async function emptyTrash(): Promise<number> {
+  const count = trash.length;
+  trash = [];
+  return count;
+}
+
+/** Auto-clean expired trash + results. Called on gallery load. */
 export async function cleanupOldResults(days: number = RECYCLE_DAYS): Promise<number> {
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  const before = results.length;
+  const before = trash.length + results.length;
+  trash = trash.filter((t) => t.deletedAt > cutoff);
   results = results.filter((r) => r.createdAt > cutoff);
-  return before - results.length;
+  return before - trash.length - results.length;
 }
 
 /**

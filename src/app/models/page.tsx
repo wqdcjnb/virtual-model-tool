@@ -36,6 +36,7 @@ export default function ModelsPage() {
   // ---- Generator state ----
   const [genMode, setGenMode] = useState<GenMode>('text-to-image');
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL);
+  const [modelName, setModelName] = useState('');
   const [refPreviewUrl, setRefPreviewUrl] = useState<string | null>(null);
   const [refUploading, setRefUploading] = useState(false);
   const [refPrompt, setRefPrompt] = useState('');
@@ -143,6 +144,7 @@ export default function ModelsPage() {
         refPrompt: refPrompt.trim() || undefined,
         aspectRatio,
         quantity,
+        customName: modelName.trim() || undefined,
       });
       refreshModels();
       setShowGenerator(false);
@@ -161,6 +163,7 @@ export default function ModelsPage() {
     setSelectedModelId(DEFAULT_MODEL);
     setAspectRatio('3:4');
     setQuantity(1);
+    setModelName('');
   };
 
   // ---- Manual upload ----
@@ -434,6 +437,18 @@ export default function ModelsPage() {
                   />
                 </div>
               )}
+
+              {/* Model Name */}
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">模特名称（可选）</label>
+                <input
+                  type="text"
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  placeholder="不填则自动生成名称"
+                  className="w-full px-3 py-2 rounded-lg bg-accent/30 border border-border text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
               {/* Gender */}
               <div>

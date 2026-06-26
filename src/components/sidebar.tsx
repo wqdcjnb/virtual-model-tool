@@ -9,6 +9,7 @@ import {
   Shirt,
   Images,
   Scissors,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/models', label: '模特库', icon: Users },
   { href: '/garments', label: '服装库', icon: Shirt },
   { href: '/gallery', label: '作品画廊', icon: Images },
+  { href: '/recycle', label: '回收站', icon: Trash2 },
 ];
 
 export function Sidebar() {
