@@ -249,7 +249,7 @@ export async function generateTryOn(params: {
   modelId: string;
   garmentIds: string[];
   aiModel?: string;
-  tryOnModel?: string;
+  genModel?: string;
   resolution?: string;
   aspectRatio?: string;
   quantity?: number;
@@ -261,23 +261,19 @@ export async function generateTryOn(params: {
   );
 
   if (!model) throw new Error("Model not found");
-  if (selectedGarments.length === 0) throw new Error("No garments selected");
+  if (!params.prompt) throw new Error("请输入描述文字");
 
   const garmentNames = selectedGarments.map((g) => g.name).join("和");
   const n = Math.min(params.quantity || 1, 4);
-
-  // 用 nano-banana-pro 图生图做虚拟试衣
-  // 默认：只换衣服，不改人物和环境；用户可在文本框自定义
-  const defaultPrompt = `keep the exact same person, same face, same pose, same background, same lighting, only change the clothing to ${garmentNames}. Do not change the person or environment at all. Photorealistic.`;
-  const basePrompt = params.prompt || defaultPrompt;
+  const selectedModel = params.genModel || "nano-banana-pro";
 
   const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "nano-banana-pro",
+      model: selectedModel,
       mode: "image-to-image",
-      prompt: basePrompt,
+      prompt: params.prompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
       size: "1024*1024",
       n,
@@ -308,7 +304,7 @@ export async function generateTryOn(params: {
     imageUrls: allUrls,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
-    aiModel: "nano-banana-pro",
+    aiModel: selectedModel,
     resolution: "1024 x 1024",
     createdAt: new Date().toISOString(),
   };
