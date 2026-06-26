@@ -17,7 +17,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "1024*1024",
     maxImages: 4,
     supportsImageToImage: true,
-    description: "CQT 加强版，快速高质量",
+    description: "CQT 快速高质量",
   },
   {
     id: "wan2.7-image-pro",
@@ -28,7 +28,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "4096*4096",
     maxImages: 4,
     supportsImageToImage: true,
-    description: "DashScope 旗舰，4K 高清",
+    description: "DashScope 旗舰 4K",
   },
   {
     id: "qwen-image-2.0-pro",
@@ -39,7 +39,29 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "2048*2048",
     maxImages: 6,
     supportsImageToImage: true,
-    description: "DashScope Qwen 旗舰，最多 6 张",
+    description: "DashScope Qwen 6张",
+  },
+  {
+    id: "google/gemini-3-pro-image",
+    name: "Gemini 3 Pro Image",
+    group: "recommended",
+    platform: "openrouter",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 1,
+    supportsImageToImage: true,
+    description: "Google 最新图生，画质顶尖",
+  },
+  {
+    id: "google/gemini-3.1-flash-image",
+    name: "Gemini 3.1 Flash Image",
+    group: "recommended",
+    platform: "openrouter",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 1,
+    supportsImageToImage: true,
+    description: "Google 快速图生",
   },
 ];
 

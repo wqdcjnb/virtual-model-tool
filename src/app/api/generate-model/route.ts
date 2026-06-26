@@ -1,11 +1,12 @@
 /**
  * POST /api/generate-model
  * 创建模特生成任务（文生图 / 图生图）
- * 支持多平台：DashScope + CQT AI
+ * 支持多平台：DashScope + CQT AI + OpenRouter
  */
 import { NextResponse } from "next/server";
 import { createModelGenerationTask } from "@/lib/dashscope";
 import { createCQTModelTask } from "@/lib/cqt";
+import { generateImage } from "@/lib/openrouter";
 import { getModelConfig } from "@/lib/constants";
 
 export async function POST(request: Request) {
@@ -59,6 +60,17 @@ export async function POST(request: Request) {
     }
 
     const safeN = Math.min(Math.max(n || 1, 1), config.maxImages);
+
+    // ---- OpenRouter 平台 ----
+    if (config.platform === "openrouter") {
+      const { results } = await generateImage({
+        model: config.id,
+        prompt: prompt.trim(),
+        referenceImageUrl: referenceImageUrl || undefined,
+      });
+      console.log("[generate-model] OpenRouter:", { model, count: results.length });
+      return NextResponse.json({ success: true, results, platform: "openrouter" });
+    }
 
     // ---- CQT 平台 ----
     if (config.platform === "cqt") {
