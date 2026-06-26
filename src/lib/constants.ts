@@ -10,7 +10,7 @@ import type { ModelConfig } from "./types";
 export const MODEL_CONFIGS: ModelConfig[] = [
   {
     id: "nano-banana-pro",
-    name: "疾影 Pro",
+    name: "Nano Banana Pro",
     group: "recommended",
     platform: "cqt",
     endpoint: "cqt-nano",
@@ -21,7 +21,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
   },
   {
     id: "wan2.7-image-pro",
-    name: "万象 Pro",
+    name: "Wan2.7 Pro",
     group: "recommended",
     platform: "dashscope",
     endpoint: "multimodal-generation",
@@ -32,7 +32,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
   },
   {
     id: "qwen-image-2.0-pro",
-    name: "千问 Pro",
+    name: "Qwen-Image Pro",
     group: "recommended",
     platform: "dashscope",
     endpoint: "multimodal-generation",
