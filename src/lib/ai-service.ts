@@ -93,7 +93,16 @@ export const TRYON_MODELS = TRYON_MODEL_CONFIGS.map((m) => ({
   recommended: m.recommended,
 }));
 
-// ---- Helpers to map between old and new params ----
+// ---- Helpers ----
+
+/** Convert relative URLs to absolute so external APIs can access them */
+function absoluteUrl(path: string): string {
+  if (!path) return path;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  // Client-side: use current origin; server-side fallback
+  if (typeof window !== "undefined") return `${window.location.origin}${path}`;
+  return `http://8.134.18.54${path}`;
+}
 
 function mapIdentity(ageRange: string, skinTone: string, bodyType: string): ModelFormFields {
   const ageMap: Record<string, string> = {
@@ -265,9 +274,9 @@ export async function generateTryOn(params: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: params.tryOnModel || DEFAULT_TRYON_MODEL,
-      personImageUrl: model.imageUrl,
-      topGarmentUrl: topGarment?.imageUrl || undefined,
-      bottomGarmentUrl: bottomGarment?.imageUrl || undefined,
+      personImageUrl: absoluteUrl(model.imageUrl),
+      topGarmentUrl: absoluteUrl(topGarment?.imageUrl || ""),
+      bottomGarmentUrl: absoluteUrl(bottomGarment?.imageUrl || ""),
       resolution: params.resolution === "4096 x 4096" ? "2K" : "1K",
       restoreFace: true,
     }),
