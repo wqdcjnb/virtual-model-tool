@@ -8,7 +8,6 @@ import type { ModelConfig } from "./types";
 // ============================================================
 
 export const MODEL_CONFIGS: ModelConfig[] = [
-  // ---- 推荐组（支持图生图）----
   {
     id: "wan2.7-image-pro",
     name: "Wan2.7 Pro",
@@ -28,77 +27,6 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxImages: 4,
     supportsImageToImage: true,
     description: "均衡版，2K 高清，支持文生图+图生图",
-  },
-  {
-    id: "wan2.6-image",
-    name: "Wan2.6",
-    group: "recommended",
-    endpoint: "multimodal-generation",
-    maxResolution: "1440*1440",
-    maxImages: 4,
-    supportsImageToImage: true,
-    description: "性价比之选，支持文生图+图生图",
-  },
-  {
-    id: "qwen-image-2.0-pro",
-    name: "Qwen-Image Pro",
-    group: "recommended",
-    endpoint: "multimodal-generation",
-    maxResolution: "2048*2048",
-    maxImages: 6,
-    supportsImageToImage: true,
-    description: "Qwen 旗舰，最多 6 张，支持图生图",
-  },
-  {
-    id: "qwen-image-2.0",
-    name: "Qwen-Image",
-    group: "recommended",
-    endpoint: "multimodal-generation",
-    maxResolution: "2048*2048",
-    maxImages: 6,
-    supportsImageToImage: true,
-    description: "Qwen 均衡版，最多 6 张，支持图生图",
-  },
-  // ---- 轻量组（纯文生图）----
-  {
-    id: "qwen-image-max",
-    name: "Qwen-Image Max",
-    group: "lightweight",
-    endpoint: "text2image",
-    maxResolution: "1664*928",
-    maxImages: 1,
-    supportsImageToImage: false,
-    description: "快速文生图",
-  },
-  {
-    id: "qwen-image-plus",
-    name: "Qwen-Image Plus",
-    group: "lightweight",
-    endpoint: "text2image",
-    maxResolution: "1664*928",
-    maxImages: 1,
-    supportsImageToImage: false,
-    description: "轻量文生图",
-  },
-  {
-    id: "z-image-turbo",
-    name: "Z-Image Turbo",
-    group: "lightweight",
-    endpoint: "text2image",
-    maxResolution: "2048*2048",
-    maxImages: 1,
-    supportsImageToImage: false,
-    description: "极速写实人像生成",
-  },
-  {
-    id: "wan2.6-t2i",
-    name: "Wan2.6 T2I",
-    group: "lightweight",
-    endpoint: "text2image",
-    maxResolution: "1440*1440",
-    maxImages: 4,
-    supportsImageToImage: false,
-    description: "经典文生图",
   },
 ];
 
@@ -255,14 +183,6 @@ export const TRYON_MODEL_CONFIGS: TryOnModelConfig[] = [
     description: "高清虚拟试衣，服装贴合度最佳",
     quality: "ultra-hd",
     recommended: true,
-  },
-  {
-    id: "aitryon",
-    name: "AI 试衣 基础版",
-    provider: "DashScope",
-    description: "标准虚拟试衣，速度快成本低",
-    quality: "high",
-    recommended: false,
   },
 ];
 

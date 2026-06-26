@@ -12,17 +12,15 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listModels, listGarments, generateTryOn, TRYON_MODELS } from '@/lib/ai-service';
+import { listModels, listGarments, generateTryOn } from '@/lib/ai-service';
 import { CATEGORY_LABELS, type Model, type Garment } from '@/lib/mock-data';
+import { DEFAULT_TRYON_MODEL, getTryOnModelConfig } from '@/lib/constants';
 
 export default function StudioPage() {
   const [models, setModels] = useState<Model[]>([]);
   const [garments, setGarments] = useState<Garment[]>([]);
   const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [selectedGarments, setSelectedGarments] = useState<Garment[]>([]);
-  const [selectedTryOnModel, setSelectedTryOnModel] = useState(
-    TRYON_MODELS.find((m) => m.recommended)?.id || TRYON_MODELS[0].id
-  );
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -56,7 +54,7 @@ export default function StudioPage() {
       const result = await generateTryOn({
         modelId: selectedModel.id,
         garmentIds: selectedGarments.map((g) => g.id),
-        tryOnModel: selectedTryOnModel,
+        tryOnModel: DEFAULT_TRYON_MODEL,
         resolution: '2048 x 2048',
       });
       setResultImage(result.imageUrl);
@@ -88,17 +86,9 @@ export default function StudioPage() {
           <h1 className="text-sm font-semibold text-foreground">试衣工作室</h1>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={selectedTryOnModel}
-            onChange={(e) => setSelectedTryOnModel(e.target.value)}
-            className="text-xs bg-accent/50 border border-border rounded-lg px-2.5 py-1.5 text-foreground outline-none focus:ring-1 focus:ring-primary"
-          >
-            {TRYON_MODELS.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name} {model.recommended ? '⭐' : ''}
-              </option>
-            ))}
-          </select>
+          <span className="text-xs bg-primary/10 text-primary border border-primary/20 rounded-lg px-2.5 py-1.5">
+            {getTryOnModelConfig(DEFAULT_TRYON_MODEL)?.name || DEFAULT_TRYON_MODEL}
+          </span>
         </div>
       </div>
 
@@ -155,7 +145,7 @@ export default function StudioPage() {
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground">AI正在生成试衣效果...</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  使用 {TRYON_MODELS.find((m) => m.id === selectedTryOnModel)?.name || selectedTryOnModel} 模型
+                  使用 {getTryOnModelConfig(DEFAULT_TRYON_MODEL)?.name || "AI 试衣 Plus"} 模型
                 </p>
               </div>
               {/* Progress bar */}

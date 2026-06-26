@@ -164,20 +164,11 @@ export default function ModelsPage() {
                   onChange={(e) => setSelectedModelId(e.target.value)}
                   className="w-full rounded-lg bg-accent/30 border border-border px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
                 >
-                  <optgroup label="推荐 — 支持文生图+图生图">
-                    {AI_MODELS.filter((m) => m.supportsImageToImage).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} {m.recommended ? '⭐' : ''} — {m.description}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="轻量 — 纯文生图">
-                    {AI_MODELS.filter((m) => !m.supportsImageToImage).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} — {m.description}
-                      </option>
-                    ))}
-                  </optgroup>
+                  {AI_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {m.recommended ? '⭐ ' : ''}— {m.description}
+                    </option>
+                  ))}
                 </select>
               </div>
 
