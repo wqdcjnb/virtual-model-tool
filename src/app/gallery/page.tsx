@@ -13,6 +13,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { listResults, deleteResult, cleanupOldResults } from '@/lib/ai-service';
+import { downloadImage } from '@/lib/download';
 import type { TryOnResult } from '@/lib/mock-data';
 
 export default function GalleryPage() {
@@ -40,11 +41,7 @@ export default function GalleryPage() {
   };
 
   const handleDownload = (result: TryOnResult) => {
-    const timestamp = new Date(result.createdAt).getTime();
-    const link = document.createElement('a');
-    link.href = result.imageUrl;
-    link.download = `tryon-${result.modelName}-${timestamp}.jpg`;
-    link.click();
+    downloadImage(result.imageUrl, `tryon-${result.modelName}-${Date.now()}.png`);
   };
 
   return (

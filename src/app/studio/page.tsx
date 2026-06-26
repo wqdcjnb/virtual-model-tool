@@ -12,6 +12,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { downloadImage } from '@/lib/download';
 import { listModels, listGarments, generateTryOn } from '@/lib/ai-service';
 import { CATEGORY_LABELS, type Model, type Garment } from '@/lib/mock-data';
 import { DEFAULT_TRYON_MODEL, getTryOnModelConfig, ASPECT_RATIOS } from '@/lib/constants';
@@ -176,12 +177,7 @@ export default function StudioPage() {
                     <Maximize2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = resultImage;
-                      link.download = `tryon-${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
-                      link.click();
-                    }}
+                    onClick={() => downloadImage(resultImage, `tryon-${Date.now()}.png`)}
                     className="p-2 rounded-lg bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 transition-colors"
                   >
                     <Download className="w-4 h-4" />
