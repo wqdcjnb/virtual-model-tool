@@ -243,7 +243,7 @@ export async function generateModel(params: {
 }
 
 /**
- * Generate a virtual try-on result using DashScope aitryon-plus
+ * Generate a virtual try-on result using CQT Nano Banana Pro (图生图模式)
  */
 export async function generateTryOn(params: {
   modelId: string;
@@ -261,32 +261,34 @@ export async function generateTryOn(params: {
   if (!model) throw new Error("Model not found");
   if (selectedGarments.length === 0) throw new Error("No garments selected");
 
-  // Map garment categories to API params
-  const topGarment = selectedGarments.find(
-    (g) => g.category === "top" || g.category === "dress" || g.category === "outerwear"
-  );
-  const bottomGarment = selectedGarments.find(
-    (g) => g.category === "bottom"
-  );
+  const garmentNames = selectedGarments.map((g) => g.name).join("和");
 
-  const res = await fetch("/api/try-on", {
+  // 用 nano-banana-pro 图生图做虚拟试衣
+  const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: params.tryOnModel || DEFAULT_TRYON_MODEL,
-      personImageUrl: absoluteUrl(model.imageUrl),
-      topGarmentUrl: absoluteUrl(topGarment?.imageUrl || ""),
-      bottomGarmentUrl: absoluteUrl(bottomGarment?.imageUrl || ""),
-      resolution: -1,
-      restoreFace: true,
+      model: "nano-banana-pro",
+      mode: "image-to-image",
+      prompt: `A person exactly like the reference image, wearing ${garmentNames}, realistic photo, same pose, same background, natural lighting, high quality virtual try-on`,
+      referenceImageUrl: absoluteUrl(model.imageUrl),
+      size: "1024*1024",
+      n: 1,
     }),
   });
 
   const data = await res.json();
   if (!data.success) throw new Error(data.message);
 
-  // Poll for result
-  const imageUrls = await pollTask(data.taskId);
+  // Get results (sync or async)
+  let imageUrls: string[];
+  if (data.results?.length) {
+    imageUrls = data.results;
+  } else if (data.taskId) {
+    imageUrls = await pollTask(data.taskId, data.platform, data.group);
+  } else {
+    throw new Error("未获取到任务ID或结果");
+  }
   const imageUrl = imageUrls[0];
   if (!imageUrl) throw new Error("未获取到试衣结果");
 
@@ -299,8 +301,8 @@ export async function generateTryOn(params: {
     imageUrl,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
-    aiModel: params.tryOnModel || DEFAULT_TRYON_MODEL,
-    resolution: params.resolution || "2048 x 2048",
+    aiModel: "nano-banana-pro",
+    resolution: "1024 x 1024",
     createdAt: new Date().toISOString(),
   };
 
