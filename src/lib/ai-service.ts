@@ -252,7 +252,9 @@ export async function generateTryOn(params: {
   tryOnModel?: string;
   resolution?: string;
   aspectRatio?: string;
-}): Promise<TryOnResult> {
+  quantity?: number;
+  prompt?: string;
+}): Promise<TryOnResult & { imageUrls?: string[] }> {
   const model = models.find((m) => m.id === params.modelId);
   const selectedGarments = garments.filter((g) =>
     params.garmentIds.includes(g.id)
@@ -262,43 +264,46 @@ export async function generateTryOn(params: {
   if (selectedGarments.length === 0) throw new Error("No garments selected");
 
   const garmentNames = selectedGarments.map((g) => g.name).join("和");
+  const n = Math.min(params.quantity || 1, 4);
 
   // 用 nano-banana-pro 图生图做虚拟试衣
+  const basePrompt = params.prompt || `A person wearing ${garmentNames}, same person as reference, photorealistic fashion photo, natural pose, high quality`;
+
   const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "nano-banana-pro",
       mode: "image-to-image",
-      prompt: `A person exactly like the reference image, wearing ${garmentNames}, realistic photo, same pose, same background, natural lighting, high quality virtual try-on`,
+      prompt: basePrompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
       size: "1024*1024",
-      n: 1,
+      n,
     }),
   });
 
   const data = await res.json();
   if (!data.success) throw new Error(data.message);
 
-  // Get results (sync or async)
-  let imageUrls: string[];
+  // Get results
+  let allUrls: string[];
   if (data.results?.length) {
-    imageUrls = data.results;
+    allUrls = data.results;
   } else if (data.taskId) {
-    imageUrls = await pollTask(data.taskId, data.platform, data.group);
+    allUrls = await pollTask(data.taskId, data.platform, data.group);
   } else {
     throw new Error("未获取到任务ID或结果");
   }
-  const imageUrl = imageUrls[0];
-  if (!imageUrl) throw new Error("未获取到试衣结果");
+  if (!allUrls.length) throw new Error("未获取到试衣结果");
 
   const id = generateId("result");
 
-  const result: TryOnResult = {
+  const result: TryOnResult & { imageUrls?: string[] } = {
     id,
     modelId: params.modelId,
     garmentIds: params.garmentIds,
-    imageUrl,
+    imageUrl: allUrls[0],
+    imageUrls: allUrls,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
     aiModel: "nano-banana-pro",

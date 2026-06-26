@@ -26,6 +26,9 @@ export default function StudioPage() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showPreview, setShowPreview] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('3:4');
+  const [quantity, setQuantity] = useState(1);
+  const [tryOnPrompt, setTryOnPrompt] = useState('');
+  const [resultImages, setResultImages] = useState<string[]>([]);
 
   useEffect(() => {
     listModels().then(setModels);
@@ -51,15 +54,18 @@ export default function StudioPage() {
     if (!selectedModel || selectedGarments.length === 0) return;
     setIsGenerating(true);
     setResultImage(null);
+    setResultImages([]);
     try {
       const result = await generateTryOn({
         modelId: selectedModel.id,
         garmentIds: selectedGarments.map((g) => g.id),
         tryOnModel: DEFAULT_TRYON_MODEL,
         aspectRatio,
-        resolution: aspectRatio === '1:1' ? '1024 x 1024' : '2048 x 2048',
+        quantity,
+        prompt: tryOnPrompt.trim() || undefined,
       });
       setResultImage(result.imageUrl);
+      if (result.imageUrls) setResultImages(result.imageUrls);
     } catch (err) {
       console.error('Generation failed:', err);
     } finally {
@@ -69,6 +75,7 @@ export default function StudioPage() {
 
   const handleReset = () => {
     setResultImage(null);
+    setResultImages([]);
     setShowPreview(false);
   };
 
@@ -308,57 +315,80 @@ export default function StudioPage() {
       </div>
 
       {/* Bottom Action Bar */}
-      <div className="flex items-center justify-between px-6 h-14 border-t border-border bg-card shrink-0">
+      <div className="flex flex-col px-6 py-2 border-t border-border bg-card shrink-0 gap-2">
+        {/* Prompt + Settings row */}
         <div className="flex items-center gap-3">
-          {selectedModel && (
-            <span className="text-xs text-muted-foreground">
-              模特: <span className="text-foreground font-medium">{selectedModel.name}</span>
-            </span>
-          )}
-          {selectedGarments.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              服装: <span className="text-foreground font-medium">{selectedGarments.length}件</span>
-            </span>
-          )}
+          <input
+            type="text"
+            value={tryOnPrompt}
+            onChange={(e) => setTryOnPrompt(e.target.value)}
+            placeholder="描述你想要的试衣效果（可选）..."
+            className="flex-1 px-3 py-1.5 rounded-lg bg-accent/30 border border-border text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+          />
           <select
             value={aspectRatio}
             onChange={(e) => setAspectRatio(e.target.value)}
-            className="text-xs bg-accent/30 border border-border rounded-lg px-2 py-1 text-foreground outline-none"
+            className="text-xs bg-accent/30 border border-border rounded-lg px-2 py-1 text-foreground outline-none shrink-0"
           >
             {ASPECT_RATIOS.map((r) => (
               <option key={r.value} value={r.value}>{r.label}</option>
             ))}
           </select>
+          <div className="flex gap-1 items-center shrink-0">
+            <span className="text-[10px] text-muted-foreground">数量</span>
+            {[1, 2, 3, 4].map((v) => (
+              <button
+                key={v}
+                onClick={() => setQuantity(v)}
+                className={cn(
+                  'w-7 h-7 rounded text-xs font-medium transition-colors',
+                  quantity === v
+                    ? 'bg-primary/10 text-primary border border-primary/30'
+                    : 'bg-accent/30 text-muted-foreground border border-border hover:border-muted-foreground/30'
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {resultImage && (
+        {/* Action row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {selectedModel && (
+              <span className="text-xs text-muted-foreground">
+                模特: <span className="text-foreground font-medium">{selectedModel.name}</span>
+              </span>
+            )}
+            {selectedGarments.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                服装: <span className="text-foreground font-medium">{selectedGarments.length}件</span>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {resultImage && (
+              <button onClick={handleReset} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground border border-border hover:bg-accent/50 transition-colors">
+                <RotateCcw className="w-3.5 h-3.5" /> 重新生成
+              </button>
+            )}
             <button
-              onClick={handleReset}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground border border-border hover:bg-accent/50 transition-colors"
+              onClick={handleGenerate}
+              disabled={!selectedModel || selectedGarments.length === 0 || isGenerating}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                selectedModel && selectedGarments.length > 0 && !isGenerating
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20'
+                  : 'bg-accent text-muted-foreground cursor-not-allowed'
+              )}
             >
-              <RotateCcw className="w-3.5 h-3.5" /> 重新生成
+              {isGenerating ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 生成中...</>
+              ) : (
+                <><Sparkles className="w-3.5 h-3.5" /> 生成试衣效果</>
+              )}
             </button>
-          )}
-          <button
-            onClick={handleGenerate}
-            disabled={!selectedModel || selectedGarments.length === 0 || isGenerating}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-              selectedModel && selectedGarments.length > 0 && !isGenerating
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20'
-                : 'bg-accent text-muted-foreground cursor-not-allowed'
-            )}
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> 生成中...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" /> 生成试衣效果
-              </>
-            )}
-          </button>
+          </div>
         </div>
       </div>
 
