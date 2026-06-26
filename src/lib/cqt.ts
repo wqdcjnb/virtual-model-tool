@@ -53,9 +53,11 @@ interface CQTResponse {
 }
 
 interface CQTInfoResult {
+  id?: string;
   status: string;
-  images?: { url: string }[];
-  errorMsg?: string;
+  resultUrl?: string | null;
+  resultUrls?: string[];
+  errorMsg?: string | null;
 }
 
 // ============================================================
@@ -124,10 +126,11 @@ export async function queryCQTTask(
 
   const info = data.data as CQTInfoResult;
   const status = (info.status?.toUpperCase() || "PENDING") as TaskStatus;
-  const results =
-    info.images
-      ?.map((img: { url: string }) => img.url)
-      .filter(Boolean) || [];
+
+  // CQT returns resultUrl (single) or resultUrls (multiple)
+  const results: string[] = [];
+  if (info.resultUrl) results.push(info.resultUrl);
+  if (info.resultUrls?.length) results.push(...info.resultUrls);
 
   return {
     status,
