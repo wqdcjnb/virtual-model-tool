@@ -331,10 +331,12 @@ export async function queryTask(taskId: string): Promise<TaskResult> {
       ?.map((r: { url?: string }) => r.url)
       .filter(Boolean) as string[] || [];
 
-  return {
-    status,
-    results,
-    message:
-      status === "FAILED" ? "任务执行失败，请检查输入参数后重试" : undefined,
-  };
+  // 构建详细错误信息
+  let message: string | undefined;
+  if (status === "FAILED") {
+    const raw = JSON.stringify(output);
+    message = `失败 | DashScope返回: ${raw.substring(0, 300)}`;
+  }
+
+  return { status, results, message };
 }
