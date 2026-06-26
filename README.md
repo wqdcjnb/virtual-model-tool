@@ -1,363 +1,137 @@
-# projects
+# AI Virtual Try-On Studio
 
-这是一个基于 [Next.js 16](https://nextjs.org) + [shadcn/ui](https://ui.shadcn.com) 的全栈应用项目，由扣子编程 CLI 创建。
+AI 驱动的虚拟模特生成与虚拟试衣平台，基于 Next.js 16 + shadcn/ui + 阿里云 DashScope API。
 
 ## 快速开始
 
-### 启动开发服务器
-
 ```bash
-coze dev
-```
+# 安装依赖（必须用 pnpm）
+pnpm install
 
-启动后，在浏览器中打开 [http://localhost:5000](http://localhost:5000) 查看应用。
+# 启动开发服务器
+pnpm dev
+# → http://localhost:5000
 
-开发服务器支持热更新，修改代码后页面会自动刷新。
+# 构建生产版本
+pnpm build
 
-### 构建生产版本
-
-```bash
-coze build
-```
-
-### 启动生产服务器
-
-```bash
-coze start
+# 启动生产服务器
+pnpm start
 ```
 
 ## 项目结构
 
 ```
 src/
-├── app/                      # Next.js App Router 目录
-│   ├── layout.tsx           # 根布局组件
-│   ├── page.tsx             # 首页
-│   ├── globals.css          # 全局样式（包含 shadcn 主题变量）
-│   └── [route]/             # 其他路由页面
-├── components/              # React 组件目录
-│   └── ui/                  # shadcn/ui 基础组件（优先使用）
-│       ├── button.tsx
-│       ├── card.tsx
-│       └── ...
-├── lib/                     # 工具函数库
-│   └── utils.ts            # cn() 等工具函数
-└── hooks/                   # 自定义 React Hooks（可选）
-
-server/
-├── index.ts                 # 自定义服务器入口
-├── tsconfig.json           # Server TypeScript 配置
-└── dist/                    # 编译输出目录（自动生成）
+├── app/
+│   ├── layout.tsx                     # 根布局（侧边栏导航）
+│   ├── page.tsx                       # 首页仪表盘
+│   ├── globals.css                    # 全局样式 + shadcn 主题变量
+│   ├── studio/page.tsx                # 虚拟试衣工作室（核心）
+│   ├── models/page.tsx                # AI 模特工坊
+│   ├── garments/page.tsx              # 服装库
+│   ├── gallery/page.tsx               # 作品画廊
+│   └── api/
+│       ├── generate-model/route.ts    # POST 模特生成（文生图 + 图生图）
+│       ├── try-on/route.ts            # POST 虚拟试衣
+│       ├── upload/route.ts            # POST 图片上传
+│       ├── task/[taskId]/route.ts     # GET 任务轮询
+│       └── uploads/[filename]/route.ts # GET 静态图片服务
+├── components/
+│   ├── ui/                            # shadcn/ui 组件（62 个）
+│   └── sidebar.tsx                    # 侧边栏导航
+├── lib/
+│   ├── dashscope.ts                   # DashScope API 客户端
+│   ├── ai-service.ts                  # AI 服务层
+│   ├── constants.ts                   # 模型配置 + 选项常量
+│   ├── types.ts                       # TypeScript 类型
+│   ├── prompt-builder.ts              # 结构化字段 → 英文 prompt
+│   ├── mock-data.ts                   # 演示数据类型定义
+│   └── utils.ts                       # cn() 工具函数
+└── hooks/
+    └── use-mobile.ts                  # 移动端检测
+public/images/
+    ├── models/                        # 模特图片
+    ├── garments/                      # 服装图片
+    └── results/                       # 试衣结果图片
 ```
 
-## 核心开发规范
+## 核心功能
 
-### 1. 组件开发
+| 页面 | 路由 | 说明 |
+|------|------|------|
+| **工作台** | `/` | 数据统计、快捷操作、最近作品 |
+| **试衣工作室** | `/studio` | 选模特 + 选服装 → AI 虚拟试衣 |
+| **模特工坊** | `/models` | AI 生成模特（性别/年龄/肤色/体型/发型） |
+| **服装库** | `/garments` | 浏览/上传服装 |
+| **作品画廊** | `/gallery` | 浏览/下载历史作品 |
 
-**优先使用 shadcn/ui 基础组件**
+## AI 模型
 
-本项目已预装完整的 shadcn/ui 组件库，位于 `src/components/ui/` 目录。开发时应优先使用这些组件作为基础：
+### 模特生成（DashScope 多模型支持）
 
-```tsx
-// ✅ 推荐：使用 shadcn 基础组件
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+| 模型 | 说明 | 最大分辨率 | 图生图 |
+|------|------|-----------|--------|
+| Wan2.7 Pro | 旗舰版，4K 高清 | 4096×4096 | ✅ |
+| Wan2.7 | 均衡版 | 2048×2048 | ✅ |
+| Wan2.6 | 性价比之选 | 1440×1440 | ✅ |
+| Qwen-Image Pro | 最多 6 张 | 2048×2048 | ✅ |
+| Qwen-Image | 均衡版 | 2048×2048 | ✅ |
+| Qwen-Image Max | 快速文生图 | 1664×928 | ❌ |
+| Qwen-Image Plus | 轻量文生图 | 1664×928 | ❌ |
+| Z-Image Turbo | 极速写实人像 | 2048×2048 | ❌ |
+| Wan2.6 T2I | 经典文生图 | 1440×1440 | ❌ |
 
-export default function MyComponent() {
-  return (
-    <Card>
-      <CardHeader>标题</CardHeader>
-      <CardContent>
-        <Input placeholder="输入内容" />
-        <Button>提交</Button>
-      </CardContent>
-    </Card>
-  );
-}
-```
+### 虚拟试衣
 
-**可用的 shadcn 组件清单**
+| 模型 | 说明 |
+|------|------|
+| aitryon-plus | DashScope AI 试衣 Plus 版，高清输出 |
 
-- 表单：`button`, `input`, `textarea`, `select`, `checkbox`, `radio-group`, `switch`, `slider`
-- 布局：`card`, `separator`, `tabs`, `accordion`, `collapsible`, `scroll-area`
-- 反馈：`alert`, `alert-dialog`, `dialog`, `toast`, `sonner`, `progress`
-- 导航：`dropdown-menu`, `menubar`, `navigation-menu`, `context-menu`
-- 数据展示：`table`, `avatar`, `badge`, `hover-card`, `tooltip`, `popover`
-- 其他：`calendar`, `command`, `carousel`, `resizable`, `sidebar`
+## 输出规格
 
-详见 `src/components/ui/` 目录下的具体组件实现。
+- **格式**: PNG
+- **分辨率**: 1K / 2K 可选
+- **比例**: 1:1 / 3:4 / 4:3 / 9:16 / 16:9
+- **数量**: 最多 4 张（Qwen-Image 系列最多 6 张）
 
-### 2. 路由开发
+## API 路由
 
-Next.js 使用文件系统路由，在 `src/app/` 目录下创建文件夹即可添加路由：
+| 路由 | 方法 | 说明 |
+|------|------|------|
+| `/api/generate-model` | POST | 创建模特生成任务 |
+| `/api/try-on` | POST | 创建虚拟试衣任务 |
+| `/api/upload` | POST | 上传图片到服务器 |
+| `/api/task/[taskId]` | GET | 查询异步任务结果 |
+| `/api/uploads/[filename]` | GET | 提供静态图片文件 |
+
+## 环境变量
 
 ```bash
-# 创建新路由 /about
-src/app/about/page.tsx
-
-# 创建动态路由 /posts/[id]
-src/app/posts/[id]/page.tsx
-
-# 创建路由组（不影响 URL）
-src/app/(marketing)/about/page.tsx
-
-# 创建 API 路由
-src/app/api/users/route.ts
+# .env.local（已 gitignore）
+DASHSCOPE_API_KEY=你的阿里云 DashScope API Key
 ```
 
-**页面组件示例**
-
-```tsx
-// src/app/about/page.tsx
-import { Button } from '@/components/ui/button';
-
-export const metadata = {
-  title: '关于我们',
-  description: '关于页面描述',
-};
-
-export default function AboutPage() {
-  return (
-    <div>
-      <h1>关于我们</h1>
-      <Button>了解更多</Button>
-    </div>
-  );
-}
-```
-
-**动态路由示例**
-
-```tsx
-// src/app/posts/[id]/page.tsx
-export default async function PostPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-
-  return <div>文章 ID: {id}</div>;
-}
-```
-
-**API 路由示例**
-
-```tsx
-// src/app/api/users/route.ts
-import { NextResponse } from 'next/server';
-
-export async function GET() {
-  return NextResponse.json({ users: [] });
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-  return NextResponse.json({ success: true });
-}
-```
-
-### 3. 依赖管理
-
-**必须使用 pnpm 管理依赖**
-
-```bash
-# ✅ 安装依赖
-pnpm install
-
-# ✅ 添加新依赖
-pnpm add package-name
-
-# ✅ 添加开发依赖
-pnpm add -D package-name
-
-# ❌ 禁止使用 npm 或 yarn
-# npm install  # 错误！
-# yarn add     # 错误！
-```
-
-项目已配置 `preinstall` 脚本，使用其他包管理器会报错。
-
-### 4. 样式开发
-
-**使用 Tailwind CSS v4**
-
-本项目使用 Tailwind CSS v4 进行样式开发，并已配置 shadcn 主题变量。
-
-```tsx
-// 使用 Tailwind 类名
-<div className="flex items-center gap-4 p-4 rounded-lg bg-background">
-  <Button className="bg-primary text-primary-foreground">
-    主要按钮
-  </Button>
-</div>
-
-// 使用 cn() 工具函数合并类名
-import { cn } from '@/lib/utils';
-
-<div className={cn(
-  "base-class",
-  condition && "conditional-class",
-  className
-)}>
-  内容
-</div>
-```
-
-**主题变量**
-
-主题变量定义在 `src/app/globals.css` 中，支持亮色/暗色模式：
-
-- `--background`, `--foreground`
-- `--primary`, `--primary-foreground`
-- `--secondary`, `--secondary-foreground`
-- `--muted`, `--muted-foreground`
-- `--accent`, `--accent-foreground`
-- `--destructive`, `--destructive-foreground`
-- `--border`, `--input`, `--ring`
-
-### 5. 表单开发
-
-推荐使用 `react-hook-form` + `zod` 进行表单开发：
-
-```tsx
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-const formSchema = z.object({
-  username: z.string().min(2, '用户名至少 2 个字符'),
-  email: z.string().email('请输入有效的邮箱'),
-});
-
-export default function MyForm() {
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: { username: '', email: '' },
-  });
-
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log(data);
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Input {...form.register('username')} />
-      <Input {...form.register('email')} />
-      <Button type="submit">提交</Button>
-    </form>
-  );
-}
-```
-
-### 6. 数据获取
-
-**服务端组件（推荐）**
-
-```tsx
-// src/app/posts/page.tsx
-async function getPosts() {
-  const res = await fetch('https://api.example.com/posts', {
-    cache: 'no-store', // 或 'force-cache'
-  });
-  return res.json();
-}
-
-export default async function PostsPage() {
-  const posts = await getPosts();
-
-  return (
-    <div>
-      {posts.map(post => (
-        <div key={post.id}>{post.title}</div>
-      ))}
-    </div>
-  );
-}
-```
-
-**客户端组件**
-
-```tsx
-'use client';
-
-import { useEffect, useState } from 'react';
-
-export default function ClientComponent() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/data')
-      .then(res => res.json())
-      .then(setData);
-  }, []);
-
-  return <div>{JSON.stringify(data)}</div>;
-}
-```
-
-## 常见开发场景
-
-### 添加新页面
-
-1. 在 `src/app/` 下创建文件夹和 `page.tsx`
-2. 使用 shadcn 组件构建 UI
-3. 根据需要添加 `layout.tsx` 和 `loading.tsx`
-
-### 创建业务组件
-
-1. 在 `src/components/` 下创建组件文件（非 UI 组件）
-2. 优先组合使用 `src/components/ui/` 中的基础组件
-3. 使用 TypeScript 定义 Props 类型
-
-### 添加全局状态
-
-推荐使用 React Context 或 Zustand：
-
-```tsx
-// src/lib/store.ts
-import { create } from 'zustand';
-
-interface Store {
-  count: number;
-  increment: () => void;
-}
-
-export const useStore = create<Store>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-}));
-```
-
-### 集成数据库
-
-推荐使用 Prisma 或 Drizzle ORM，在 `src/lib/db.ts` 中配置。
+从 [阿里云 DashScope](https://dashscope.aliyun.com) 获取 API Key。
 
 ## 技术栈
 
-- **框架**: Next.js 16.1.1 (App Router)
-- **UI 组件**: shadcn/ui (基于 Radix UI)
-- **样式**: Tailwind CSS v4
-- **表单**: React Hook Form + Zod
-- **图标**: Lucide React
-- **字体**: Geist Sans & Geist Mono
-- **包管理器**: pnpm 9+
-- **TypeScript**: 5.x
+| 层 | 技术 |
+|----|------|
+| 框架 | Next.js 16.1 (App Router) |
+| UI | React 19 + shadcn/ui (Radix UI) |
+| 样式 | Tailwind CSS v4 + 暗色主题 |
+| 表单 | React Hook Form + Zod |
+| 图标 | Lucide React |
+| AI | 阿里云 DashScope API |
+| 图片 | sharp |
+| 包管理 | pnpm |
+| 语言 | TypeScript |
 
-## 参考文档
+## 开发规范
 
-- [Next.js 官方文档](https://nextjs.org/docs)
-- [shadcn/ui 组件文档](https://ui.shadcn.com)
-- [Tailwind CSS 文档](https://tailwindcss.com/docs)
-- [React Hook Form](https://react-hook-form.com)
-
-## 重要提示
-
-1. **必须使用 pnpm** 作为包管理器
-2. **优先使用 shadcn/ui 组件** 而不是从零开发基础组件
-3. **遵循 Next.js App Router 规范**，正确区分服务端/客户端组件
-4. **使用 TypeScript** 进行类型安全开发
-5. **使用 `@/` 路径别名** 导入模块（已配置）
+- **必须使用 pnpm**（已配置 preinstall 强制检查）
+- **优先使用 shadcn/ui 组件**，位于 `src/components/ui/`
+- **使用 `@/` 路径别名**导入模块（指向 `src/`）
+- **API 路由**统一放在 `src/app/api/`
+- **新页面**在 `src/app/` 下创建文件夹 + `page.tsx`
