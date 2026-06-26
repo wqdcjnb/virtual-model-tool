@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { listModels, listGarments, generateTryOn } from '@/lib/ai-service';
 import { CATEGORY_LABELS, type Model, type Garment } from '@/lib/mock-data';
-import { DEFAULT_TRYON_MODEL, getTryOnModelConfig } from '@/lib/constants';
+import { DEFAULT_TRYON_MODEL, getTryOnModelConfig, ASPECT_RATIOS } from '@/lib/constants';
 
 export default function StudioPage() {
   const [models, setModels] = useState<Model[]>([]);
@@ -25,6 +25,7 @@ export default function StudioPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showPreview, setShowPreview] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState('3:4');
 
   useEffect(() => {
     listModels().then(setModels);
@@ -55,7 +56,8 @@ export default function StudioPage() {
         modelId: selectedModel.id,
         garmentIds: selectedGarments.map((g) => g.id),
         tryOnModel: DEFAULT_TRYON_MODEL,
-        resolution: '2048 x 2048',
+        aspectRatio,
+        resolution: aspectRatio === '1:1' ? '1024 x 1024' : '2048 x 2048',
       });
       setResultImage(result.imageUrl);
     } catch (err) {
@@ -125,9 +127,6 @@ export default function StudioPage() {
                 </div>
                 <div className="p-2">
                   <p className="text-xs font-medium text-foreground">{model.name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {model.skinTone} / {model.bodyType}
-                  </p>
                 </div>
               </button>
             ))}
@@ -321,6 +320,15 @@ export default function StudioPage() {
               服装: <span className="text-foreground font-medium">{selectedGarments.length}件</span>
             </span>
           )}
+          <select
+            value={aspectRatio}
+            onChange={(e) => setAspectRatio(e.target.value)}
+            className="text-xs bg-accent/30 border border-border rounded-lg px-2 py-1 text-foreground outline-none"
+          >
+            {ASPECT_RATIOS.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
         </div>
         <div className="flex items-center gap-2">
           {resultImage && (

@@ -8,9 +8,7 @@ import {
   Shirt,
   Images,
   ArrowRight,
-  Zap,
   Camera,
-  Wand2,
 } from 'lucide-react';
 import { getStats } from '@/lib/ai-service';
 import type { TryOnResult } from '@/lib/mock-data';
@@ -94,26 +92,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* AI Model Info */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-foreground mb-4">推荐AI模型</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ModelInfoCard
-            name="FLUX.1 Pro"
-            provider="Black Forest Labs"
-            description="当前最强写实人像生成模型，皮肤纹理和光影效果极佳，适合生成高质量虚拟模特"
-            tags={['模特生成', '超高清', '写实人像']}
-            recommended
-          />
-          <ModelInfoCard
-            name="IDM-VTON"
-            provider="Yisol"
-            description="当前最佳虚拟试衣专用模型，服装贴合度和真实感最强，支持全身试穿"
-            tags={['虚拟试衣', '全身试穿', '高保真']}
-            recommended
-          />
-        </div>
-      </div>
 
       {/* Recent Results */}
       {stats.recentResults.length > 0 && (
@@ -220,41 +198,3 @@ function QuickAction({
   );
 }
 
-function ModelInfoCard({
-  name,
-  provider,
-  description,
-  tags,
-  recommended,
-}: {
-  name: string;
-  provider: string;
-  description: string;
-  tags: string[];
-  recommended: boolean;
-}) {
-  return (
-    <div className="p-4 rounded-xl border border-border bg-card">
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-foreground">{name}</h3>
-        {recommended && (
-          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium">
-            <Zap className="w-2.5 h-2.5" /> 推荐
-          </span>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground mb-1">{provider}</p>
-      <p className="text-xs text-muted-foreground/80 mb-3">{description}</p>
-      <div className="flex flex-wrap gap-1.5">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="px-2 py-0.5 rounded-full bg-accent/50 text-[10px] text-muted-foreground"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}

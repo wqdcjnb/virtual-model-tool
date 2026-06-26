@@ -15,6 +15,7 @@ import {
   getModelConfig,
   TRYON_MODEL_CONFIGS,
   DEFAULT_TRYON_MODEL,
+  ASPECT_RATIO_SIZE_MAP,
 } from "./constants";
 import { buildModelPrompt } from "./prompt-builder";
 import type { ModelFormFields } from "./types";
@@ -136,6 +137,11 @@ export async function generateModel(params: {
   hairStyle: string;
   additionalPrompt?: string;
   modelId?: string;
+  mode?: string;
+  referenceImageUrl?: string | null;
+  refPrompt?: string;
+  aspectRatio?: string;
+  quantity?: number;
 }): Promise<Model> {
   const fields = mapIdentity(params.ageRange, params.skinTone, params.bodyType);
   fields.gender = params.gender || "";
@@ -151,18 +157,30 @@ export async function generateModel(params: {
 
   const selectedModel = params.modelId || DEFAULT_MODEL;
   const config = getModelConfig(selectedModel);
+  const genMode = params.mode || "text-to-image";
+  const ratio = params.aspectRatio || "3:4";
+  const size = ASPECT_RATIO_SIZE_MAP[ratio] || config?.maxResolution || "1024*1024";
 
   // Call real API
+  const body: Record<string, unknown> = {
+    model: selectedModel,
+    mode: genMode,
+    prompt: prompt.trim(),
+    size,
+    n: params.quantity || 1,
+  };
+
+  if (genMode === "image-to-image" && params.referenceImageUrl) {
+    body.referenceImageUrl = params.referenceImageUrl;
+    if (params.refPrompt) {
+      body.prompt = `${prompt.trim()}. ${params.refPrompt}`;
+    }
+  }
+
   const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: selectedModel,
-      mode: "text-to-image",
-      prompt,
-      size: config?.maxResolution || "1024*1024",
-      n: 1,
-    }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();
@@ -207,6 +225,7 @@ export async function generateTryOn(params: {
   aiModel?: string;
   tryOnModel?: string;
   resolution?: string;
+  aspectRatio?: string;
 }): Promise<TryOnResult> {
   const model = models.find((m) => m.id === params.modelId);
   const selectedGarments = garments.filter((g) =>

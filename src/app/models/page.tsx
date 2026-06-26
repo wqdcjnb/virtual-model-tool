@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Users,
   Plus,
+  Upload,
   Loader2,
   X,
   Sparkles,
+  ImagePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listModels, generateModel, AI_MODELS } from '@/lib/ai-service';
-import { DEFAULT_MODEL } from '@/lib/constants';
+import { listModels, generateModel, AI_MODELS, uploadGarment } from '@/lib/ai-service';
+import { DEFAULT_MODEL, getModelConfig, ASPECT_RATIOS } from '@/lib/constants';
 import {
   type Model,
   SKIN_TONES,
@@ -19,12 +21,23 @@ import {
   AGE_RANGES,
 } from '@/lib/mock-data';
 
+type GenMode = 'text-to-image' | 'image-to-image';
+
 export default function ModelsPage() {
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGenerator, setShowGenerator] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // ---- Generator state ----
+  const [genMode, setGenMode] = useState<GenMode>('text-to-image');
   const [selectedModelId, setSelectedModelId] = useState(DEFAULT_MODEL);
+  const [refPreviewUrl, setRefPreviewUrl] = useState<string | null>(null);
+  const [refUploading, setRefUploading] = useState(false);
+  const [refPrompt, setRefPrompt] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('3:4');
+  const [quantity, setQuantity] = useState(1);
   const [form, setForm] = useState({
     gender: 'female',
     ageRange: AGE_RANGES[1],
@@ -33,6 +46,19 @@ export default function ModelsPage() {
     hairStyle: HAIR_STYLES[4],
     additionalPrompt: '',
   });
+
+  // ---- Upload state ----
+  const [uploadForm, setUploadForm] = useState({
+    name: '',
+    gender: 'female' as Model['gender'],
+    imagePreview: null as string | null,
+    imageFile: null as File | null,
+  });
+  const [uploading, setUploading] = useState(false);
+
+  const config = getModelConfig(selectedModelId);
+  const isImg2ImgSupported = config?.supportsImageToImage ?? true;
+  const maxQuantity = config?.maxImages || 4;
 
   const refreshModels = () => {
     listModels().then((data) => {
@@ -45,16 +71,125 @@ export default function ModelsPage() {
     refreshModels();
   }, []);
 
+  // Switch mode — auto-fallback if model doesn't support img2img
+  const handleModeChange = (mode: GenMode) => {
+    if (mode === 'image-to-image' && !isImg2ImgSupported) return;
+    setGenMode(mode);
+  };
+
+  const handleModelChange = (id: string) => {
+    setSelectedModelId(id);
+    const cfg = getModelConfig(id);
+    if (!cfg?.supportsImageToImage && genMode === 'image-to-image') {
+      setGenMode('text-to-image');
+    }
+  };
+
+  // ---- Upload reference image ----
+  const uploadRefImage = useCallback(async (file: File) => {
+    setRefUploading(true);
+    const reader = new FileReader();
+    const base64Promise = new Promise<string>((resolve) => {
+      reader.onload = () => resolve(reader.result as string);
+    });
+    reader.readAsDataURL(file);
+    const base64 = await base64Promise;
+    setRefPreviewUrl(base64);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setRefUploading(false);
+    }
+  }, []);
+
+  // ---- Generate ----
   const handleGenerate = async () => {
+    if (genMode === 'image-to-image' && !refPreviewUrl) return;
     setGenerating(true);
     try {
-      await generateModel({ ...form, modelId: selectedModelId });
+      await generateModel({
+        ...form,
+        modelId: selectedModelId,
+        mode: genMode,
+        referenceImageUrl: refPreviewUrl,
+        refPrompt: refPrompt.trim() || undefined,
+        aspectRatio,
+        quantity,
+      });
       refreshModels();
       setShowGenerator(false);
+      resetGenerator();
     } catch (err) {
       console.error('Generation failed:', err);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const resetGenerator = () => {
+    setRefPreviewUrl(null);
+    setRefPrompt('');
+    setGenMode('text-to-image');
+    setSelectedModelId(DEFAULT_MODEL);
+    setAspectRatio('3:4');
+    setQuantity(1);
+  };
+
+  // ---- Manual upload ----
+  const handleUploadModel = async () => {
+    if (!uploadForm.imageFile || !uploadForm.name.trim()) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+      });
+      reader.readAsDataURL(uploadForm.imageFile);
+      const base64 = await base64Promise;
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      await uploadGarment({
+        name: uploadForm.name,
+        category: 'top',
+        color: '',
+        style: '',
+        imageUrl: data.url,
+      });
+
+      // Also add as model
+      const newModel: Model = {
+        id: `model-upload-${Date.now()}`,
+        name: uploadForm.name,
+        gender: uploadForm.gender,
+        ageRange: '',
+        skinTone: '',
+        bodyType: '',
+        hairStyle: '',
+        imageUrl: data.url,
+        prompt: '',
+        createdAt: new Date().toISOString(),
+      };
+      setModels((prev) => [newModel, ...prev]);
+      setShowUpload(false);
+      setUploadForm({ name: '', gender: 'female', imagePreview: null, imageFile: null });
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -71,12 +206,20 @@ export default function ModelsPage() {
             管理和生成AI虚拟模特
           </p>
         </div>
-        <button
-          onClick={() => setShowGenerator(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
-        >
-          <Plus className="w-4 h-4" /> 生成新模特
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-accent/50 transition-colors"
+          >
+            <Upload className="w-4 h-4" /> 上传模特
+          </button>
+          <button
+            onClick={() => setShowGenerator(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+          >
+            <Plus className="w-4 h-4" /> 生成新模特
+          </button>
+        </div>
       </div>
 
       {/* Model Grid */}
@@ -87,7 +230,6 @@ export default function ModelsPage() {
               <div className="aspect-[3/4] shimmer" />
               <div className="p-3 space-y-2">
                 <div className="h-3 w-20 shimmer rounded" />
-                <div className="h-2 w-32 shimmer rounded" />
               </div>
             </div>
           ))}
@@ -114,27 +256,13 @@ export default function ModelsPage() {
               </div>
               <div className="p-3">
                 <p className="text-sm font-medium text-foreground">{model.name}</p>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  <span className="px-1.5 py-0.5 rounded bg-accent/50 text-[10px] text-muted-foreground">
-                    {model.gender === 'female' ? '女' : '男'}
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-accent/50 text-[10px] text-muted-foreground">
-                    {model.skinTone}
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-accent/50 text-[10px] text-muted-foreground">
-                    {model.bodyType}
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-accent/50 text-[10px] text-muted-foreground">
-                    {model.hairStyle}
-                  </span>
-                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Generator Modal */}
+      {/* ======== Generator Modal ======== */}
       {showGenerator && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !generating && setShowGenerator(false)} />
@@ -156,21 +284,103 @@ export default function ModelsPage() {
 
             {/* Form */}
             <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-              {/* AI Model Selector */}
-              <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">AI 模型</label>
-                <select
-                  value={selectedModelId}
-                  onChange={(e) => setSelectedModelId(e.target.value)}
-                  className="w-full rounded-lg bg-accent/30 border border-border px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
-                >
-                  {AI_MODELS.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.recommended ? '⭐ ' : ''}— {m.description}
-                    </option>
-                  ))}
-                </select>
+              {/* AI Model + Mode */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">AI 模型</label>
+                  <select
+                    value={selectedModelId}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    className="w-full rounded-lg bg-accent/30 border border-border px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {AI_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {getModelConfig(selectedModelId)?.supportsImageToImage
+                      ? '文生图 · 图生图'
+                      : '仅文生图'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">生成模式</label>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleModeChange('text-to-image')}
+                      className={cn(
+                        'flex-1 py-1.5 rounded-lg text-xs border transition-colors',
+                        genMode === 'text-to-image'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                      )}
+                    >
+                      文生图
+                    </button>
+                    <button
+                      onClick={() => handleModeChange('image-to-image')}
+                      disabled={!isImg2ImgSupported}
+                      className={cn(
+                        'flex-1 py-1.5 rounded-lg text-xs border transition-colors',
+                        genMode === 'image-to-image'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : !isImg2ImgSupported
+                            ? 'border-border text-muted-foreground/30 cursor-not-allowed'
+                            : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                      )}
+                    >
+                      图生图
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Reference Image Upload (img2img only) */}
+              {genMode === 'image-to-image' && (
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">参考图</label>
+                  {refPreviewUrl ? (
+                    <div className="relative w-24 h-32 rounded-lg overflow-hidden border border-border">
+                      <img src={refPreviewUrl} alt="参考图" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => setRefPreviewUrl(null)}
+                        className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-20 rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 cursor-pointer transition-colors">
+                      {refUploading ? (
+                        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                      ) : (
+                        <>
+                          <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground mt-1">上传参考图</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) uploadRefImage(f);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  <textarea
+                    value={refPrompt}
+                    onChange={(e) => setRefPrompt(e.target.value)}
+                    placeholder="补充描述（可选）..."
+                    className="w-full mt-2 h-14 px-3 py-2 rounded-lg bg-accent/30 border border-border text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary resize-none"
+                  />
+                </div>
+              )}
 
               {/* Gender */}
               <div>
@@ -196,7 +406,7 @@ export default function ModelsPage() {
                 </div>
               </div>
 
-              {/* Age Range */}
+              {/* Age / Skin / Body / Hair */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1.5 block">年龄段</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -217,7 +427,6 @@ export default function ModelsPage() {
                 </div>
               </div>
 
-              {/* Skin Tone */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1.5 block">肤色</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -238,7 +447,6 @@ export default function ModelsPage() {
                 </div>
               </div>
 
-              {/* Body Type */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1.5 block">体型</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -259,7 +467,6 @@ export default function ModelsPage() {
                 </div>
               </div>
 
-              {/* Hair Style */}
               <div>
                 <label className="text-xs font-medium text-foreground mb-1.5 block">发型</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -277,6 +484,44 @@ export default function ModelsPage() {
                       {style}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* Aspect Ratio + Quantity */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">出图比例</label>
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value)}
+                    className="w-full rounded-lg bg-accent/30 border border-border px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {ASPECT_RATIOS.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-foreground mb-1.5 block">数量</label>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => v <= maxQuantity && setQuantity(v)}
+                        disabled={v > maxQuantity}
+                        className={cn(
+                          'flex-1 py-1.5 rounded-lg text-xs border transition-colors',
+                          quantity === v
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : v > maxQuantity
+                              ? 'border-border text-muted-foreground/30 cursor-not-allowed'
+                              : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                        )}
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -305,7 +550,7 @@ export default function ModelsPage() {
               </button>
               <button
                 onClick={handleGenerate}
-                disabled={generating}
+                disabled={generating || (genMode === 'image-to-image' && !refPreviewUrl)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {generating ? (
@@ -317,6 +562,98 @@ export default function ModelsPage() {
                     <Sparkles className="w-3.5 h-3.5" /> 生成模特
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======== Upload Modal ======== */}
+      {showUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !uploading && setShowUpload(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Upload className="w-4 h-4 text-primary" />
+                <h2 className="text-sm font-semibold text-foreground">上传模特</h2>
+              </div>
+              <button onClick={() => setShowUpload(false)} className="p-1 rounded-lg hover:bg-accent transition-colors" disabled={uploading}>
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">模特名称</label>
+                <input
+                  value={uploadForm.name}
+                  onChange={(e) => setUploadForm({ ...uploadForm, name: e.target.value })}
+                  placeholder="输入名称..."
+                  className="w-full px-3 py-2 rounded-lg bg-accent/30 border border-border text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">性别</label>
+                <div className="flex gap-2">
+                  {['female', 'male'].map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => setUploadForm({ ...uploadForm, gender: g as Model['gender'] })}
+                      className={cn(
+                        'flex-1 py-2 rounded-lg text-xs font-medium border transition-colors',
+                        uploadForm.gender === g
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground hover:border-muted-foreground/30'
+                      )}
+                    >
+                      {g === 'female' ? '女' : '男'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-foreground mb-1.5 block">照片</label>
+                {uploadForm.imagePreview ? (
+                  <div className="relative w-24 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={uploadForm.imagePreview} alt="" className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => setUploadForm({ ...uploadForm, imagePreview: null, imageFile: null })}
+                      className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-20 rounded-lg border-2 border-dashed border-border hover:border-muted-foreground/30 cursor-pointer transition-colors">
+                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground mt-1">点击上传照片</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) {
+                          const reader = new FileReader();
+                          reader.onload = () => setUploadForm({ ...uploadForm, imagePreview: reader.result as string, imageFile: f });
+                          reader.readAsDataURL(f);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border">
+              <button onClick={() => setShowUpload(false)} className="px-4 py-2 rounded-lg text-xs text-muted-foreground border border-border hover:bg-accent/50 transition-colors" disabled={uploading}>
+                取消
+              </button>
+              <button
+                onClick={handleUploadModel}
+                disabled={!uploadForm.name.trim() || !uploadForm.imageFile || uploading}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {uploading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 上传中...</> : '确认上传'}
               </button>
             </div>
           </div>
