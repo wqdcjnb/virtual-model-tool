@@ -327,6 +327,39 @@ export async function listGarments(category?: string): Promise<Garment[]> {
 
 // ---- CRUD: Models ----
 
+const RANDOM_NAMES = [
+  "Emily", "Sophia", "Olivia", "Ava", "Isabella", "Mia", "Charlotte", "Amelia", "Harper", "Evelyn",
+  "Liam", "Noah", "Oliver", "James", "Elijah", "William", "Henry", "Lucas", "Benjamin", "Theodore",
+  "Luna", "Aria", "Ella", "Nova", "Stella", "Zoe", "Iris", "Hazel", "Willow", "Chloe",
+  "Kai", "Leo", "Ezra", "Finn", "Milo", "Arlo", "Jude", "Atlas", "Felix", "Jasper",
+];
+
+function randomName(): string {
+  return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+}
+
+export async function addModel(params: {
+  name?: string;
+  gender: string;
+  imageUrl: string;
+}): Promise<Model> {
+  const id = generateId('model');
+  const model: Model = {
+    id,
+    name: params.name?.trim() || randomName(),
+    gender: params.gender as Model['gender'],
+    ageRange: '',
+    skinTone: '',
+    bodyType: '',
+    hairStyle: '',
+    imageUrl: params.imageUrl,
+    prompt: '',
+    createdAt: new Date().toISOString(),
+  };
+  models.push(model);
+  return model;
+}
+
 export async function updateModelName(id: string, newName: string): Promise<void> {
   const m = models.find((x) => x.id === id);
   if (!m) throw new Error("Model not found");

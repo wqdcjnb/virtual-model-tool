@@ -35,9 +35,9 @@ export async function POST(request: Request) {
     const ext = mime.split("/")[1] || "png";
     let buffer = Buffer.from(pure, "base64");
 
-    if (buffer.length > 10 * 1024 * 1024) {
+    if (buffer.length > 15 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, message: "图片大小不能超过 10MB" },
+        { success: false, message: "图片大小不能超过 15MB" },
         { status: 400 }
       );
     }
@@ -47,9 +47,9 @@ export async function POST(request: Request) {
     const width = metadata.width || 1024;
     const height = metadata.height || 1024;
 
-    // 对超大/超小图等比缩放
+    // 自适应缩放：确保在 400~2048 之间，适合 AI 模型使用
     const MIN_SIDE = 400;
-    const MAX_SIDE = 7000;
+    const MAX_SIDE = 2048;
     const longSide = Math.max(width, height);
     const shortSide = Math.min(width, height);
     let finalW = width;
@@ -66,12 +66,19 @@ export async function POST(request: Request) {
       finalH = Math.round(finalH * scale);
     }
 
-    if (finalW !== width || finalH !== height) {
+    // 转为 PNG 并压缩（统一格式，优化大小）
+    if (finalW !== width || finalH !== height || ext !== "png") {
       const resized = await sharp(Uint8Array.from(buffer))
         .resize(finalW, finalH, { fit: "inside" })
-        .toFormat(ext === "jpg" ? "jpeg" : (ext as "png" | "jpeg" | "webp"))
+        .toFormat("png", { quality: 90, effort: 6 })
         .toBuffer();
       buffer = Buffer.from(resized);
+    } else {
+      // 即使尺寸不变也优化 PNG
+      const optimized = await sharp(Uint8Array.from(buffer))
+        .toFormat("png", { quality: 90, effort: 6 })
+        .toBuffer();
+      buffer = Buffer.from(optimized);
     }
 
     // 确保目录存在

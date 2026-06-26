@@ -14,7 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { listModels, generateModel, AI_MODELS, uploadGarment, updateModelName, deleteModel } from '@/lib/ai-service';
+import { listModels, generateModel, AI_MODELS, addModel, updateModelName, deleteModel } from '@/lib/ai-service';
 import { DEFAULT_MODEL, getModelConfig, ASPECT_RATIOS } from '@/lib/constants';
 import {
   type Model,
@@ -168,7 +168,7 @@ export default function ModelsPage() {
 
   // ---- Manual upload ----
   const handleUploadModel = async () => {
-    if (!uploadForm.imageFile || !uploadForm.name.trim()) return;
+    if (!uploadForm.imageFile) return;
     setUploading(true);
     try {
       const reader = new FileReader();
@@ -185,28 +185,13 @@ export default function ModelsPage() {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
-      await uploadGarment({
-        name: uploadForm.name,
-        category: 'top',
-        color: '',
-        style: '',
+      await addModel({
+        name: uploadForm.name.trim() || undefined,
+        gender: uploadForm.gender,
         imageUrl: data.url,
       });
 
-      // Also add as model
-      const newModel: Model = {
-        id: `model-upload-${Date.now()}`,
-        name: uploadForm.name,
-        gender: uploadForm.gender,
-        ageRange: '',
-        skinTone: '',
-        bodyType: '',
-        hairStyle: '',
-        imageUrl: data.url,
-        prompt: '',
-        createdAt: new Date().toISOString(),
-      };
-      setModels((prev) => [newModel, ...prev]);
+      refreshModels();
       setShowUpload(false);
       setUploadForm({ name: '', gender: 'female', imagePreview: null, imageFile: null });
     } catch (err) {
@@ -718,7 +703,7 @@ export default function ModelsPage() {
               </button>
               <button
                 onClick={handleUploadModel}
-                disabled={!uploadForm.name.trim() || !uploadForm.imageFile || uploading}
+                disabled={!uploadForm.imageFile || uploading}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {uploading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 上传中...</> : '确认上传'}
