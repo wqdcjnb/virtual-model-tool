@@ -1,18 +1,12 @@
 /**
  * POST /api/generate-model
  * 创建模特生成任务（文生图 / 图生图）
- * 根据模型自动选择端点：multimodal-generation 或 text2image
+ * 支持多平台：DashScope + CQT AI
  */
 import { NextResponse } from "next/server";
 import { createModelGenerationTask } from "@/lib/dashscope";
+import { createCQTModelTask } from "@/lib/cqt";
 import { getModelConfig } from "@/lib/constants";
-
-const VALID_SIZES = [
-  "1024*1024", "960*1280", "1280*960",
-  "720*1280", "1280*720",
-  "1440*1440", "2048*2048", "4096*4096",
-  "1664*928",
-];
 
 export async function POST(request: Request) {
   try {
@@ -24,11 +18,9 @@ export async function POST(request: Request) {
       referenceImageUrl,
       size,
       n,
-      negativePrompt,
     } = body;
 
     // ---- 校验 ----
-
     if (!model) {
       return NextResponse.json(
         { success: false, message: "请选择 AI 模型" },
@@ -44,13 +36,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (mode !== "text-to-image" && mode !== "image-to-image") {
-      return NextResponse.json(
-        { success: false, message: `无效的生成模式: ${mode}` },
-        { status: 400 }
-      );
-    }
-
     if (!prompt || !prompt.trim()) {
       return NextResponse.json(
         { success: false, message: "请输入形象描述" },
@@ -61,7 +46,7 @@ export async function POST(request: Request) {
     if (mode === "image-to-image") {
       if (!config.supportsImageToImage) {
         return NextResponse.json(
-          { success: false, message: `${config.name} 不支持图生图模式，请切换模型` },
+          { success: false, message: `${config.name} 不支持图生图` },
           { status: 400 }
         );
       }
@@ -73,32 +58,36 @@ export async function POST(request: Request) {
       }
     }
 
-    if (size && !VALID_SIZES.includes(size)) {
-      return NextResponse.json(
-        { success: false, message: `无效的尺寸: ${size}` },
-        { status: 400 }
-      );
+    const safeN = Math.min(Math.max(n || 1, 1), config.maxImages);
+
+    // ---- CQT 平台 ----
+    if (config.platform === "cqt") {
+      const group = config.endpoint === "cqt-flux" ? "flux" : "nano";
+      const { taskId } = await createCQTModelTask({
+        group,
+        model: config.id,
+        prompt: prompt.trim(),
+        imageUrl: referenceImageUrl || undefined,
+        n: safeN,
+        size: size || config.maxResolution,
+      });
+
+      console.log("[generate-model] CQT 任务:", { model, group, taskId });
+      return NextResponse.json({ success: true, taskId, platform: "cqt", group });
     }
 
-    // ---- 调用 ----
-
+    // ---- DashScope 平台 ----
     const { taskId } = await createModelGenerationTask({
       model,
-      mode,
+      mode: mode || "text-to-image",
       prompt: prompt.trim(),
       referenceImageUrl: referenceImageUrl || undefined,
       size: size || config.maxResolution,
-      n: Math.min(Math.max(n || 1, 1), config.maxImages),
-      negativePrompt: negativePrompt || undefined,
+      n: safeN,
     });
 
-    console.log("[generate-model] 任务已创建:", {
-      model,
-      mode,
-      taskId,
-    });
-
-    return NextResponse.json({ success: true, taskId });
+    console.log("[generate-model] DashScope 任务:", { model, taskId });
+    return NextResponse.json({ success: true, taskId, platform: "dashscope" });
   } catch (err: any) {
     console.error("创建模特生成任务失败:", err);
     return NextResponse.json(

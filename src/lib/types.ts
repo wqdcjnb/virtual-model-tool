@@ -11,17 +11,21 @@ export type GenerationMode = "text-to-image" | "image-to-image";
 /** 模型分组 */
 export type ModelGroup = "recommended" | "lightweight";
 
+/** 模型平台 */
+export type ModelPlatform = "dashscope" | "cqt";
+
 /** 模型端点类型 */
-export type ModelEndpoint = "multimodal-generation" | "text2image";
+export type ModelEndpoint = "multimodal-generation" | "text2image" | "cqt-nano" | "cqt-flux";
 
 /** 单个模型配置 */
 export interface ModelConfig {
   id: string;
   name: string;
   group: ModelGroup;
+  platform: ModelPlatform;
   endpoint: ModelEndpoint;
-  maxResolution: string;       // e.g. "4096*4096"
-  maxImages: number;           // 最大出图数量
+  maxResolution: string;
+  maxImages: number;
   supportsImageToImage: boolean;
   description: string;
 }

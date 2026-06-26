@@ -34,11 +34,16 @@ const generateId = (prefix: string) => `${prefix}-${++idCounter}`;
 const POLL_INTERVAL = 2000;
 const MAX_POLL_TIME = 5 * 60 * 1000; // 5 minutes max
 
-async function pollTask(taskId: string): Promise<string[]> {
+async function pollTask(taskId: string, platform?: string, group?: string): Promise<string[]> {
   const startTime = Date.now();
+  const params = new URLSearchParams();
+  if (platform) params.set("platform", platform);
+  if (group) params.set("group", group || "");
+  const query = params.toString();
+  const url = `/api/task/${taskId}${query ? "?" + query : ""}`;
 
   while (Date.now() - startTime < MAX_POLL_TIME) {
-    const res = await fetch(`/api/task/${taskId}`);
+    const res = await fetch(url);
     const data = await res.json();
 
     if (!data.success) {
@@ -186,8 +191,8 @@ export async function generateModel(params: {
   const data = await res.json();
   if (!data.success) throw new Error(data.message);
 
-  // Poll for result
-  const imageUrls = await pollTask(data.taskId);
+  // Poll for result (pass platform info for CQT)
+  const imageUrls = await pollTask(data.taskId, data.platform, data.group);
   const imageUrl = imageUrls[0];
   if (!imageUrl) throw new Error("未获取到生成结果");
 

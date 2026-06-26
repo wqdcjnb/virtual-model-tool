@@ -1,12 +1,13 @@
 /**
  * GET /api/task/[taskId]
- * 查询 DashScope 异步任务结果（通用，适用所有 async API）
+ * 查询异步任务结果（DashScope + CQT 通用）
  */
 import { NextResponse } from "next/server";
-import { queryTask } from "@/lib/dashscope";
+import { queryTask as queryDashScopeTask } from "@/lib/dashscope";
+import { queryCQTTask } from "@/lib/cqt";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ taskId: string }> }
 ) {
   try {
@@ -19,8 +20,23 @@ export async function GET(
       );
     }
 
-    const result = await queryTask(taskId);
+    // 通过 query param 区分：?platform=cqt&group=flux
+    const url = new URL(request.url);
+    const platform = url.searchParams.get("platform") || "dashscope";
 
+    if (platform === "cqt") {
+      const group = (url.searchParams.get("group") || "flux") as "nano" | "flux";
+      const result = await queryCQTTask(group, taskId);
+      return NextResponse.json({
+        success: true,
+        status: result.status,
+        results: result.results,
+        message: result.message,
+      });
+    }
+
+    // DashScope
+    const result = await queryDashScopeTask(taskId);
     return NextResponse.json({
       success: true,
       status: result.status,
