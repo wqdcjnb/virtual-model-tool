@@ -335,7 +335,7 @@ export async function queryTask(taskId: string): Promise<TaskResult> {
   let message: string | undefined;
   if (status === "FAILED") {
     const raw = JSON.stringify(output);
-    message = `失败 | DashScope返回: ${raw.substring(0, 300)}`;
+    message = `失败 | DashScope返回: ${raw.substring(0, 600)}`;
   }
 
   return { status, results, message };
