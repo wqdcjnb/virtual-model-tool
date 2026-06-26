@@ -267,7 +267,9 @@ export async function generateTryOn(params: {
   const n = Math.min(params.quantity || 1, 4);
 
   // 用 nano-banana-pro 图生图做虚拟试衣
-  const basePrompt = params.prompt || `A person wearing ${garmentNames}, same person as reference, photorealistic fashion photo, natural pose, high quality`;
+  // 默认：只换衣服，不改人物和环境；用户可在文本框自定义
+  const defaultPrompt = `keep the exact same person, same face, same pose, same background, same lighting, only change the clothing to ${garmentNames}. Do not change the person or environment at all. Photorealistic.`;
+  const basePrompt = params.prompt || defaultPrompt;
 
   const res = await fetch("/api/generate-model", {
     method: "POST",
