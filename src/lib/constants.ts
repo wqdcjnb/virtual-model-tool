@@ -53,15 +53,15 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "Google 最新图生，画质顶尖",
   },
   {
-    id: "google/gemini-3.1-flash-image",
-    name: "Gemini 3.1 Flash Image",
+    id: "openai/gpt-5.4-image-2",
+    name: "GPT Image 2",
     group: "recommended",
     platform: "openrouter",
     endpoint: "multimodal-generation",
     maxResolution: "2048*2048",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "Google 快速图生",
+    description: "OpenAI 最强图生模型",
   },
 ];
 
