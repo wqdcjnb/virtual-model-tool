@@ -9,6 +9,17 @@ import type { ModelConfig } from "./types";
 
 export const MODEL_CONFIGS: ModelConfig[] = [
   {
+    id: "aitryon-plus",
+    name: "AI 试衣 Plus",
+    group: "recommended",
+    platform: "dashscope",
+    endpoint: "multimodal-generation",
+    maxResolution: "1920*1080",
+    maxImages: 1,
+    supportsImageToImage: false,
+    description: "真实虚拟试衣，人物换装不换脸",
+  },
+  {
     id: "nano-banana-pro",
     name: "Nano Banana Pro",
     group: "recommended",
@@ -77,7 +88,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
 ];
 
 /** 默认模型 */
-export const DEFAULT_MODEL = "nano-banana-pro";
+export const DEFAULT_MODEL = "aitryon-plus";
 
 /** 根据 ID 查找模型配置 */
 export function getModelConfig(id: string): ModelConfig | undefined {
