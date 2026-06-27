@@ -39,6 +39,14 @@ export default function StudioPage() {
     return onModelChange(() => setSelectedGenModel(getSelectedModel()));
   }, []);
 
+  // Auto-fill default prompt when garments selected
+  useEffect(() => {
+    if (!tryOnPrompt.trim() && selectedGarments.length > 0 && selectedModel) {
+      const gNames = selectedGarments.map((g) => g.name).join("、");
+      setTryOnPrompt(`让图中的模特穿上${gNames}，保持人物面貌和背景环境不变，只更换服装，照片级真实感`);
+    }
+  }, [selectedGarments, selectedModel]);
+
   const toggleGarment = useCallback((garment: Garment) => {
     setSelectedGarments((prev) => {
       const exists = prev.find((g) => g.id === garment.id);
@@ -318,7 +326,7 @@ export default function StudioPage() {
             type="text"
             value={tryOnPrompt}
             onChange={(e) => setTryOnPrompt(e.target.value)}
-            placeholder="描述你想要的试衣效果（可选）..."
+            placeholder="选择模特和服装后自动生成描述，可自行修改..."
             className="flex-1 px-3 py-1.5 rounded-lg bg-accent/30 border border-border text-xs text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-primary"
           />
           <select
@@ -370,7 +378,7 @@ export default function StudioPage() {
             )}
             <button
               onClick={handleGenerate}
-              disabled={!selectedModel || selectedGarments.length === 0 || isGenerating}
+              disabled={!selectedModel || selectedGarments.length === 0 || !tryOnPrompt.trim() || isGenerating}
               className={cn(
                 'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
                 selectedModel && selectedGarments.length > 0 && !isGenerating
