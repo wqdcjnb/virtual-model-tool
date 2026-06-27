@@ -275,7 +275,7 @@ export async function generateTryOn(params: {
       mode: "image-to-image",
       prompt: params.prompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
-      size: config?.maxResolution || "1024x1024",
+      size: config?.platform === "dashscope" ? "2048*2048" : (config?.maxResolution || "1024x1024"),
       n,
     }),
   });
