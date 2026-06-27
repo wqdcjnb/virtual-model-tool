@@ -1,15 +1,11 @@
 /**
  * POST /api/upload
- * 接收 base64 图片，等比缩放后保存到 data/uploads/
- * 返回公网可访问的图片 URL
+ * 接收 base64 图片，等比缩放后上传到 CloudBase 云存储
+ * 返回公网可访问的临时 URL（有效期 2 小时）
  */
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import crypto from "crypto";
 import sharp from "sharp";
-
-const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
+import app from "@/lib/cloudbase";
 
 export async function POST(request: Request) {
   try {
@@ -32,7 +28,12 @@ export async function POST(request: Request) {
 
     const mime = matches[1];
     const pure = matches[2];
-    const ext = mime.split("/")[1] || "png";
+    const extMap: Record<string, string> = {
+      "image/png": "png",
+      "image/jpeg": "jpg",
+      "image/webp": "webp",
+    };
+    const ext = extMap[mime] || mime.split("/")[1] || "png";
     let buffer = Buffer.from(pure, "base64");
 
     if (buffer.length > 15 * 1024 * 1024) {
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     const width = metadata.width || 1024;
     const height = metadata.height || 1024;
 
-    // 自适应缩放：确保在 400~2048 之间，适合 AI 模型使用
+    // 自适应缩放：短边 ≥ 400，长边 ≤ 2048
     const MIN_SIDE = 400;
     const MAX_SIDE = 2048;
     const longSide = Math.max(width, height);
@@ -66,8 +67,6 @@ export async function POST(request: Request) {
       finalH = Math.round(finalH * scale);
     }
 
-    // 保持原格式（JPEG→JPEG，PNG→PNG），只缩放不换格式
-    // 避免 PNG 转照片导致文件过大（>5MB）被 DashScope 拒绝
     const outputFormat: "jpeg" | "png" | "webp" =
       ext === "jpg" || ext === "jpeg" ? "jpeg" :
       ext === "webp" ? "webp" : "png";
@@ -79,14 +78,12 @@ export async function POST(request: Request) {
         .toBuffer());
     }
 
-    // 如果 JPEG > 3MB，降低质量到 5MB 以下
     if (outputFormat === "jpeg" && buffer.length > 3 * 1024 * 1024) {
       buffer = Buffer.from(await sharp(Uint8Array.from(buffer))
         .jpeg({ quality: 60 })
         .toBuffer());
     }
 
-    // 最终兜底：超过 5MB 拒绝
     if (buffer.length > 5 * 1024 * 1024) {
       return NextResponse.json(
         { success: false, message: "图片处理后仍超 5MB，请上传较小的图片" },
@@ -94,26 +91,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // 确保目录存在
-    await mkdir(UPLOADS_DIR, { recursive: true });
+    // 上传到 CloudBase 云存储
+    const cloudPath = `uploads/ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const uploadResult = await app.uploadFile({
+      cloudPath,
+      fileContent: buffer,
+    });
 
-    // 写入文件
-    const baseId = `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-    const filename = `upload_${baseId}.${ext}`;
-    await writeFile(path.join(UPLOADS_DIR, filename), buffer);
+    // 获取临时访问 URL（有效期 2 小时）
+    const urlResult = await app.getTempFileURL({
+      fileList: [uploadResult.fileID],
+    });
+    const url = urlResult.fileList?.[0]?.tempFileURL || "";
 
-    // 构建公网 URL
-    const host = request.headers.get("host") || "localhost:3000";
-    const forwardedProto = request.headers.get("x-forwarded-proto");
-    const protocol = forwardedProto
-      || (host.startsWith("localhost") ? "http" : "https");
-    const url = `${protocol}://${host}/api/uploads/${filename}`;
+    if (!url) {
+      return NextResponse.json(
+        { success: false, message: "获取 CloudBase 访问链接失败" },
+        { status: 500 }
+      );
+    }
 
-    console.log("[upload] 图片上传完成:", url);
+    console.log("[upload] CloudBase 上传完成:", url);
 
     return NextResponse.json({
       success: true,
       url,
+      fileId: uploadResult.fileID,
       width: finalW,
       height: finalH,
     });
