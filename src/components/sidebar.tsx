@@ -25,7 +25,7 @@ export function onModelChange(fn: () => void) { listeners.add(fn); return () => 
 
 const navItems = [
   { href: '/', label: '工作台', icon: LayoutDashboard },
-  { href: '/studio', label: '试衣工作室', icon: Sparkles },
+  { href: '/studio', label: '换衣工作室', icon: Sparkles },
   { href: '/models', label: '模特库', icon: Users },
   { href: '/garments', label: '服装库', icon: Shirt },
   { href: '/gallery', label: '作品画廊', icon: Images },

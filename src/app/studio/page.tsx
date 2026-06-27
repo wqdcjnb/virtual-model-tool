@@ -104,7 +104,7 @@ export default function StudioPage() {
       <div className="flex items-center justify-between px-6 h-14 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4.5 h-4.5 text-primary" />
-          <h1 className="text-sm font-semibold text-foreground">试衣工作室</h1>
+          <h1 className="text-sm font-semibold text-foreground">换衣工作室</h1>
         </div>
         <div className="flex items-center gap-2">
         </div>
@@ -158,7 +158,7 @@ export default function StudioPage() {
                 <Loader2 className="absolute inset-0 m-auto w-10 h-10 text-primary animate-spin" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground">AI正在生成试衣效果...</p>
+                <p className="text-sm font-medium text-foreground">AI正在生成换衣效果...</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   使用 {selectedGenModel} 模型
                 </p>
@@ -211,7 +211,7 @@ export default function StudioPage() {
                 <Sparkles className="w-7 h-7 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">选择模特和服装开始试衣</p>
+                <p className="text-sm font-medium text-foreground">选择模特和服装开始换衣</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   从左侧选择模特，从右侧选择服装，然后点击生成
                 </p>
@@ -224,7 +224,7 @@ export default function StudioPage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   <div className="w-24 h-32 rounded-lg border border-dashed border-border flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground text-center px-2">试衣效果</span>
+                    <span className="text-[10px] text-muted-foreground text-center px-2">换衣效果</span>
                   </div>
                 </div>
               )}
@@ -389,7 +389,7 @@ export default function StudioPage() {
               {isGenerating ? (
                 <><Loader2 className="w-3.5 h-3.5 animate-spin" /> 生成中...</>
               ) : (
-                <><Sparkles className="w-3.5 h-3.5" /> 生成试衣效果</>
+                <><Sparkles className="w-3.5 h-3.5" /> 生成换衣效果</>
               )}
             </button>
           </div>
