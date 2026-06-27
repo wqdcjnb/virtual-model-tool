@@ -263,25 +263,19 @@ export async function generateTryOn(params: {
   if (!model) throw new Error("Model not found");
   if (!params.prompt) throw new Error("请输入描述文字");
 
-  // Map garment categories
-  const topGarment = selectedGarments.find(
-    (g) => g.category === "top" || g.category === "dress" || g.category === "outerwear"
-  );
-  const bottomGarment = selectedGarments.find(
-    (g) => g.category === "bottom"
-  );
+  const selectedModel = params.genModel || "flux-1.1-pro:stable";
   const n = Math.min(params.quantity || 1, 4);
 
-  const res = await fetch("/api/try-on", {
+  const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "aitryon-plus",
-      personImageUrl: absoluteUrl(model.imageUrl),
-      topGarmentUrl: topGarment ? absoluteUrl(topGarment.imageUrl) : undefined,
-      bottomGarmentUrl: bottomGarment ? absoluteUrl(bottomGarment.imageUrl) : undefined,
-      resolution: -1,
-      restoreFace: true,
+      model: selectedModel,
+      mode: "image-to-image",
+      prompt: params.prompt,
+      referenceImageUrl: absoluteUrl(model.imageUrl),
+      size: "1024x1024",
+      n,
     }),
   });
 
@@ -309,8 +303,8 @@ export async function generateTryOn(params: {
     imageUrls: allUrls,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
-    aiModel: "aitryon-plus",
-    resolution: "1080 x 1920",
+    aiModel: selectedModel,
+    resolution: "1024 x 1024",
     prompt: params.prompt,
     createdAt: new Date().toISOString(),
   };

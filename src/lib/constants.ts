@@ -9,15 +9,26 @@ import type { ModelConfig } from "./types";
 
 export const MODEL_CONFIGS: ModelConfig[] = [
   {
-    id: "aitryon-plus",
-    name: "aitryon-plus",
+    id: "wan2.7-image-pro",
+    name: "Wan2.7 Pro",
     group: "recommended",
     platform: "dashscope",
     endpoint: "multimodal-generation",
-    maxResolution: "1920*1080",
-    maxImages: 1,
-    supportsImageToImage: false,
-    description: "真实虚拟试衣，人物换装不换脸",
+    maxResolution: "4096*4096",
+    maxImages: 4,
+    supportsImageToImage: true,
+    description: "DashScope 旗舰 4K",
+  },
+  {
+    id: "qwen-image-2.0-pro",
+    name: "Qwen-Image Pro",
+    group: "recommended",
+    platform: "dashscope",
+    endpoint: "multimodal-generation",
+    maxResolution: "2048*2048",
+    maxImages: 6,
+    supportsImageToImage: true,
+    description: "DashScope Qwen 6张",
   },
   {
     id: "nano-banana-pro",
@@ -39,7 +50,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "1024x1024",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "先锋图生模型，细节丰富色彩生动",
+    description: "先锋图生模型",
   },
   {
     id: "gpt-image-2",
@@ -50,7 +61,7 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "2048x2048",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "OpenAI 最新图生模型",
+    description: "OpenAI 最新图生",
   },
   {
     id: "grok-imagine-image-pro",
@@ -61,12 +72,12 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxResolution: "2048x2048",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "Elon Musk 最新图生模型",
+    description: "xAI 最新图生",
   },
 ];
 
 /** 默认模型 */
-export const DEFAULT_MODEL = "aitryon-plus";
+export const DEFAULT_MODEL = "flux-1.1-pro:stable";
 
 /** 根据 ID 查找模型配置 */
 export function getModelConfig(id: string): ModelConfig | undefined {
