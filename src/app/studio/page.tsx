@@ -216,16 +216,22 @@ export default function StudioPage() {
                   从左侧选择模特，从右侧选择服装，然后点击生成
                 </p>
               </div>
-              {/* Before preview */}
+              {/* Before preview - model + selected garments */}
               {selectedModel && (
                 <div className="mt-4 flex items-center gap-3">
                   <div className="w-24 rounded-lg overflow-hidden border border-border">
                     <img src={selectedModel.imageUrl} alt="" className="w-full aspect-[3/4] object-cover" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  <div className="w-24 h-32 rounded-lg border border-dashed border-border flex items-center justify-center">
-                    <span className="text-[10px] text-muted-foreground text-center px-2">换衣效果</span>
-                  </div>
+                  {selectedGarments.length > 0 && (
+                    <>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      {selectedGarments.map((g) => (
+                        <div key={g.id} className="w-24 rounded-lg overflow-hidden border border-border">
+                          <img src={g.imageUrl} alt={g.name} className="w-full aspect-square object-cover" />
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
