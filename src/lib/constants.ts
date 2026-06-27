@@ -45,12 +45,12 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     id: "gpt-image-2",
     name: "GPT Image 2",
     group: "recommended",
-    platform: "wuyinkeji",
+    platform: "openrouter",
     endpoint: "multimodal-generation",
-    maxResolution: "1:1",
+    maxResolution: "1024x1024",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "无尽科技 GPT 图像生成",
+    description: "LLM Relay GPT 图像生成",
   },
 ];
 

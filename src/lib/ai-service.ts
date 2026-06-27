@@ -267,6 +267,19 @@ export async function generateTryOn(params: {
   const n = Math.min(params.quantity || 1, 4);
   const config = getModelConfig(selectedModel);
 
+  // Map aspect ratio to size
+  const ratio = params.aspectRatio || "3:4";
+  const sizeMap: Record<string, string> = {
+    "1:1": "1024x1024",
+    "3:4": "1024x1536",
+    "4:3": "1536x1024",
+    "9:16": "1024x1792",
+    "16:9": "1792x1024",
+  };
+  const size = config?.platform === "dashscope"
+    ? "2048*2048"
+    : (sizeMap[ratio] || config?.maxResolution || "1024x1024");
+
   // Build reference images: model first, then selected garments
   const referenceImageUrls: string[] = [absoluteUrl(model.imageUrl)];
   for (const g of selectedGarments) {
@@ -282,7 +295,7 @@ export async function generateTryOn(params: {
       prompt: params.prompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
       referenceImageUrls,
-      size: config?.platform === "dashscope" ? "2048*2048" : (config?.maxResolution || "1024x1024"),
+      size,
       n,
     }),
   });
@@ -293,9 +306,12 @@ export async function generateTryOn(params: {
   // Get results
   let allUrls: string[];
   if (data.results?.length) {
-    allUrls = data.results;
+    // OpenRouter/n1n returns raw base64 — convert to data URL
+    allUrls = data.results.map((r: string) =>
+      r.startsWith("data:") || r.startsWith("http") ? r : `data:image/png;base64,${r}`
+    );
   } else if (data.taskId) {
-    allUrls = await pollTask(data.taskId, "dashscope");
+    allUrls = await pollTask(data.taskId, data.platform || "dashscope", data.group);
   } else {
     throw new Error("未获取到任务ID或结果");
   }
@@ -312,7 +328,7 @@ export async function generateTryOn(params: {
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
     aiModel: selectedModel,
-    resolution: "1024 x 1024",
+    resolution: size.replace("*", " x "),
     prompt: params.prompt,
     createdAt: new Date().toISOString(),
   };

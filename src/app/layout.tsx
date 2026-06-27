@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { Sidebar } from '@/components/sidebar';
+import { ResponsiveLayout } from '@/components/mobile-sidebar';
 
 export const metadata: Metadata = {
   title: {
@@ -14,12 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN" className="dark">
       <body className="antialiased">
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+        <ResponsiveLayout>
+          {children}
+        </ResponsiveLayout>
       </body>
     </html>
   );

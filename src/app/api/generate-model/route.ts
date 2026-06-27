@@ -65,10 +65,14 @@ export async function POST(request: Request) {
 
     // ---- OpenRouter 平台 ----
     if (config.platform === "openrouter") {
+      const allRefs = referenceImageUrls?.length
+        ? referenceImageUrls
+        : referenceImageUrl ? [referenceImageUrl] : [];
       const { results } = await generateImage({
         model: config.id,
         prompt: prompt.trim(),
         referenceImageUrl: referenceImageUrl || undefined,
+        referenceImageUrls: allRefs.length > 0 ? allRefs : undefined,
       });
       console.log("[generate-model] OpenRouter:", { model, count: results.length });
       return NextResponse.json({ success: true, results, platform: "openrouter" });
