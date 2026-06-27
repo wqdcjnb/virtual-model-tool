@@ -5,7 +5,6 @@
  */
 import { NextResponse } from "next/server";
 import { createModelGenerationTask } from "@/lib/dashscope";
-import { createCQTModelTask } from "@/lib/cqt";
 import { generateImage } from "@/lib/openrouter";
 import { generateImageN1N } from "@/lib/n1n";
 import { getModelConfig } from "@/lib/constants";
@@ -77,22 +76,6 @@ export async function POST(request: Request) {
       });
       console.log("[generate-model] OpenRouter:", { model, count: results.length });
       return NextResponse.json({ success: true, results, platform: "openrouter" });
-    }
-
-    // ---- CQT 平台 ----
-    if (config.platform === "cqt") {
-      const group = config.endpoint === "cqt-flux" ? "flux" : "nano";
-      const { taskId } = await createCQTModelTask({
-        group,
-        model: config.id,
-        prompt: prompt.trim(),
-        imageUrl: referenceImageUrl || undefined,
-        n: safeN,
-        size: size || config.maxResolution,
-      });
-
-      console.log("[generate-model] CQT 任务:", { model, group, taskId });
-      return NextResponse.json({ success: true, taskId, platform: "cqt", group });
     }
 
     // ---- n1n Gemini 平台 ----

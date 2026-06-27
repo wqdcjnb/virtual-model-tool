@@ -243,7 +243,7 @@ export async function generateModel(params: {
 }
 
 /**
- * Generate a virtual try-on result using CQT Nano Banana Pro (图生图模式)
+ * Generate a virtual try-on result (multi-platform img2img)
  */
 export async function generateTryOn(params: {
   modelId: string;

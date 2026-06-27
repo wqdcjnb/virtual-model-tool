@@ -12,10 +12,10 @@ export type GenerationMode = "text-to-image" | "image-to-image";
 export type ModelGroup = "recommended" | "lightweight";
 
 /** 模型平台 */
-export type ModelPlatform = "dashscope" | "cqt" | "openrouter" | "n1n";
+export type ModelPlatform = "dashscope" | "openrouter" | "n1n";
 
 /** 模型端点类型 */
-export type ModelEndpoint = "multimodal-generation" | "text2image" | "cqt-nano" | "cqt-flux";
+export type ModelEndpoint = "multimodal-generation" | "text2image";
 
 /** 单个模型配置 */
 export interface ModelConfig {

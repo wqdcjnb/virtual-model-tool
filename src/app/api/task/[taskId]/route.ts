@@ -4,7 +4,6 @@
  */
 import { NextResponse } from "next/server";
 import { queryTask as queryDashScopeTask } from "@/lib/dashscope";
-import { queryCQTTask } from "@/lib/cqt";
 
 export async function GET(
   request: Request,
@@ -23,17 +22,6 @@ export async function GET(
     // 通过 query param 区分：?platform=cqt&group=flux
     const url = new URL(request.url);
     const platform = url.searchParams.get("platform") || "dashscope";
-
-    if (platform === "cqt") {
-      const group = (url.searchParams.get("group") || "flux") as "nano" | "flux";
-      const result = await queryCQTTask(group, taskId);
-      return NextResponse.json({
-        success: true,
-        status: result.status,
-        results: result.results,
-        message: result.message,
-      });
-    }
 
     // DashScope
     const result = await queryDashScopeTask(taskId);
