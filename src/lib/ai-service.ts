@@ -277,7 +277,23 @@ export async function generateTryOn(params: {
 }
 
 export async function getStats() {
-  return { totalModels:models.length, totalGarments:garments.length, totalResults:results.length, recentResults:results.slice(-6).reverse() };
+  if (typeof window !== "undefined") {
+    const [modelsData, garmentsData, resultsData] = await Promise.all([
+      fetchColl("models"), fetchColl("garments"), fetchColl("results"),
+    ]);
+    return {
+      totalModels: modelsData.length,
+      totalGarments: garmentsData.length,
+      totalResults: resultsData.length,
+      recentResults: resultsData.slice(-6).reverse(),
+    };
+  }
+  return {
+    totalModels: models.length,
+    totalGarments: garments.length,
+    totalResults: results.length,
+    recentResults: results.slice(-6).reverse(),
+  };
 }
 
 // ---- CloudBase sync (fire-and-forget server-side calls) ----
