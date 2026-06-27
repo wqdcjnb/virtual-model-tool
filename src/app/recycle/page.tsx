@@ -11,6 +11,7 @@ import {
   Images,
 } from 'lucide-react';
 import { listTrash, restoreTrashItem, permDeleteTrashItem, emptyTrash } from '@/lib/ai-service';
+import { CATEGORY_LABELS } from '@/lib/mock-data';
 import type { Model, Garment, TryOnResult } from '@/lib/mock-data';
 
 export default function RecyclePage() {
@@ -77,7 +78,7 @@ export default function RecyclePage() {
                     <img src={m.imageUrl} alt="" className="w-12 h-16 rounded object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{m.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{m.gender === 'female' ? '女' : '男'}</p>
+                      <p className="text-[10px] text-muted-foreground">{m.gender === 'female' ? '女' : m.gender === 'male' ? '男' : '未知'}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       <button onClick={() => handleRestore('model', m.id)} className="p-1 rounded hover:bg-green-500/10 text-green-400"><RotateCcw className="w-3 h-3" /></button>
@@ -99,7 +100,7 @@ export default function RecyclePage() {
                     <img src={g.imageUrl} alt="" className="w-12 h-12 rounded object-cover" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{g.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{g.category}</p>
+                      <p className="text-[10px] text-muted-foreground">{CATEGORY_LABELS[g.category] || g.category || '未分类'}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       <button onClick={() => handleRestore('garment', g.id)} className="p-1 rounded hover:bg-green-500/10 text-green-400"><RotateCcw className="w-3 h-3" /></button>
@@ -120,8 +121,8 @@ export default function RecyclePage() {
                   <div key={r.id} className="rounded-lg border border-border bg-card p-3 flex items-center gap-3">
                     <img src={r.imageUrl} alt="" className="w-12 h-16 rounded object-cover" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{r.modelName}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{r.garmentNames.join(' + ')}</p>
+                      <p className="text-xs font-medium text-foreground truncate">{r.modelName || '未知模特'}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{(r.garmentNames || []).join(' + ') || '未知服装'}</p>
                     </div>
                     <div className="flex flex-col gap-1">
                       <button onClick={() => handleRestore('result', r.id)} className="p-1 rounded hover:bg-green-500/10 text-green-400"><RotateCcw className="w-3 h-3" /></button>

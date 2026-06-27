@@ -37,6 +37,7 @@ export default function StudioPage() {
   const [tryOnPrompt, setTryOnPrompt] = useState('');
   const [resultImages, setResultImages] = useState<string[]>([]);
   const [mobileTab, setMobileTab] = useState<MobileTab>('models');
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectionOrder, setSelectionOrder] = useState<Array<{type: 'model'; id: string} | {type: 'garment'; id: string}>>([]);
 
   useEffect(() => {
@@ -293,11 +294,13 @@ export default function StudioPage() {
                     <img
                       src={data.imageUrl}
                       alt={'name' in data ? data.name : ''}
-                      className={cn('w-full object-cover', item.type === 'model' ? 'aspect-[3/4]' : 'aspect-square')}
+                      className={cn('w-full object-cover cursor-pointer', item.type === 'model' ? 'aspect-[3/4]' : 'aspect-square')}
+                      onClick={() => setPreviewImage(data.imageUrl)}
                     />
+                    
                     <button
                       onClick={() => removeFromSelection(item.type, item.id)}
-                      className="absolute top-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                      className="absolute bottom-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
                     >
                       <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     </button>
@@ -482,6 +485,27 @@ export default function StudioPage() {
           <img
             src={resultImage}
             alt="Full preview"
+            className="max-w-full max-h-full object-contain rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setPreviewImage(null)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={previewImage}
+            alt="Image preview"
             className="max-w-full max-h-full object-contain rounded-xl"
             onClick={(e) => e.stopPropagation()}
           />

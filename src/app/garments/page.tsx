@@ -20,6 +20,7 @@ export default function GarmentsPage() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showUploader, setShowUploader] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadForm, setUploadForm] = useState({
     name: '',
     category: 'top' as Garment['category'],
@@ -104,7 +105,7 @@ export default function GarmentsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowUploader(true)}
+          onClick={() => { setShowUploader(true); setUploadForm({ name: '', category: 'top', color: '', style: '', imagePreview: null, imageFile: null }); }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
         >
           <Plus className="w-4 h-4" /> 上传服装
@@ -150,7 +151,7 @@ export default function GarmentsPage() {
               key={garment.id}
               className="group rounded-xl overflow-hidden border border-border bg-card card-hover animate-fade-in"
             >
-              <div className="aspect-square overflow-hidden relative">
+              <div className="aspect-square overflow-hidden relative cursor-pointer" onClick={() => setPreviewImage(garment.imageUrl)}>
                 <img
                   src={garment.imageUrl}
                   alt={garment.name}
@@ -162,8 +163,8 @@ export default function GarmentsPage() {
                   </span>
                 </div>
                 <button
-                  onClick={() => handleDelete(garment.id, garment.name)}
-                  className="absolute top-2 right-2 p-1 rounded bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-all"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(garment.id, garment.name); }}
+                  className="absolute bottom-2 right-2 p-1 rounded bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -319,6 +320,13 @@ export default function GarmentsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8" onClick={() => setPreviewImage(null)}>
+          <button className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20" onClick={() => setPreviewImage(null)}><X className="w-5 h-5" /></button>
+          <img src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>

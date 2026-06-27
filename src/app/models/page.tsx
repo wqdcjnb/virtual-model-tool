@@ -39,6 +39,7 @@ export default function ModelsPage() {
   const [modelName, setModelName] = useState('');
   const [refPreviewUrl, setRefPreviewUrl] = useState<string | null>(null);
   const [refUploading, setRefUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [refPrompt, setRefPrompt] = useState('');
   const [aspectRatio, setAspectRatio] = useState('3:4');
   const [quantity, setQuantity] = useState(1);
@@ -216,7 +217,7 @@ export default function ModelsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowUpload(true)}
+            onClick={() => { setShowUpload(true); setUploadForm({ name: '', gender: 'female', imagePreview: null, imageFile: null }); }}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-accent/50 transition-colors"
           >
             <Upload className="w-4 h-4" /> 上传模特
@@ -249,18 +250,19 @@ export default function ModelsPage() {
               key={model.id}
               className="group rounded-xl overflow-hidden border border-border bg-card card-hover animate-fade-in"
             >
-              <div className="aspect-[3/4] overflow-hidden relative">
+              <div className="aspect-[3/4] overflow-hidden relative cursor-pointer" onClick={() => setPreviewImage(model.imageUrl)}>
                 <img
                   src={model.imageUrl}
                   alt={model.name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="w-full py-1.5 rounded-lg bg-primary/90 text-white text-xs font-medium hover:bg-primary transition-colors">
-                    用于试衣
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(model.id, model.name); }}
+                  className="absolute bottom-2 right-2 p-1 rounded bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
               </div>
               <div className="p-3">
                 {editingId === model.id ? (
@@ -279,22 +281,8 @@ export default function ModelsPage() {
                     <button onClick={() => setEditingId(null)} className="p-1 rounded hover:bg-accent/50 text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground truncate flex-1">{model.name}</p>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => { setEditingId(model.id); setEditName(model.name); }}
-                        className="p-1 rounded hover:bg-accent/50 text-muted-foreground"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(model.id, model.name)}
-                        className="p-1 rounded hover:bg-red-500/10 text-red-400"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
+                  <div className="flex items-center">
+                    <p className="text-sm font-medium text-foreground truncate cursor-pointer hover:text-primary transition-colors" onClick={() => { setEditingId(model.id); setEditName(model.name); }}>{model.name}</p>
                   </div>
                 )}
               </div>
@@ -710,6 +698,13 @@ export default function ModelsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 sm:p-8" onClick={() => setPreviewImage(null)}>
+          <button className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 text-white hover:bg-white/20" onClick={() => setPreviewImage(null)}><X className="w-5 h-5" /></button>
+          <img src={previewImage} alt="Preview" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>

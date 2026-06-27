@@ -95,33 +95,18 @@ export default function GalleryPage() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 {/* Hover actions */}
-                <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedResult(result);
-                    }}
-                    className="flex-1 py-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white text-xs font-medium hover:bg-white/30 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleDownload(result); }}
+                    className="p-1 rounded bg-black/50 backdrop-blur-sm text-white/80 hover:text-white hover:bg-white/20 transition-colors"
                   >
-                    <Maximize2 className="w-3 h-3 inline mr-1" /> 查看
+                    <Download className="w-3 h-3" />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(result);
-                    }}
-                    className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(result.id, result.modelName); }}
+                    className="p-1 rounded bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(result.id, result.modelName);
-                    }}
-                    className="p-1.5 rounded-lg bg-red-500/30 backdrop-blur-sm text-white hover:bg-red-500/50 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
                 {/* AI Model badge */}

@@ -1,7 +1,7 @@
 /**
  * POST /api/upload
  * 接收 base64 图片，等比缩放后上传到 CloudBase 云存储
- * 返回公网可访问的临时 URL（有效期 2 小时）
+ * 返回永久可访问的图片 URL（通过 /api/file/:cloudPath 代理）
  */
 import { NextResponse } from "next/server";
 import sharp from "sharp";
@@ -92,31 +92,25 @@ export async function POST(request: Request) {
     }
 
     // 上传到 CloudBase 云存储
-    const cloudPath = `uploads/ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const cloudPath = `ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const uploadResult = await app.uploadFile({
       cloudPath,
       fileContent: buffer,
     });
 
-    // 获取临时访问 URL（有效期 2 小时）
+    // 获取 CDN 临时访问 URL
     const urlResult = await app.getTempFileURL({
       fileList: [uploadResult.fileID],
     });
-    const url = urlResult.fileList?.[0]?.tempFileURL || "";
+    const cdnUrl = urlResult.fileList?.[0]?.tempFileURL || "";
 
-    if (!url) {
-      return NextResponse.json(
-        { success: false, message: "获取 CloudBase 访问链接失败" },
-        { status: 500 }
-      );
-    }
-
-    console.log("[upload] CloudBase 上传完成:", url);
+    console.log("[upload] CloudBase 上传完成:", cdnUrl);
 
     return NextResponse.json({
       success: true,
-      url,
+      url: cdnUrl,
       fileId: uploadResult.fileID,
+      cloudPath,
       width: finalW,
       height: finalH,
     });
