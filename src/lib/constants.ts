@@ -42,42 +42,20 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "CQT 快速高质量",
   },
   {
-    id: "flux-1.1-pro:stable",
-    name: "FLUX 1.1 Pro",
+    id: "gpt-image-2:stable",
+    name: "GPT Image 2",
     group: "recommended",
     platform: "openrouter",
     endpoint: "multimodal-generation",
     maxResolution: "1024x1024",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "先锋图生模型",
-  },
-  {
-    id: "gpt-image-2",
-    name: "GPT Image 2",
-    group: "recommended",
-    platform: "openrouter",
-    endpoint: "multimodal-generation",
-    maxResolution: "2048x2048",
-    maxImages: 1,
-    supportsImageToImage: true,
-    description: "OpenAI 最新图生",
-  },
-  {
-    id: "grok-imagine-image-pro",
-    name: "Grok Imagine Pro",
-    group: "recommended",
-    platform: "openrouter",
-    endpoint: "multimodal-generation",
-    maxResolution: "2048x2048",
-    maxImages: 1,
-    supportsImageToImage: true,
-    description: "xAI 最新图生",
+    description: "n1n GPT 图像生成",
   },
 ];
 
 /** 默认模型 */
-export const DEFAULT_MODEL = "flux-1.1-pro:stable";
+export const DEFAULT_MODEL = "wan2.7-image-pro";
 
 /** 根据 ID 查找模型配置 */
 export function getModelConfig(id: string): ModelConfig | undefined {

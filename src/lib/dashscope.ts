@@ -46,6 +46,7 @@ export interface ModelGenParams {
   prompt: string;
   negativePrompt?: string;
   referenceImageUrl?: string;
+  referenceImageUrls?: string[];
   size?: string;
   n?: number;
 }
@@ -112,16 +113,24 @@ async function createMultimodalTask(
   params: ModelGenParams,
   config: ModelConfig
 ): Promise<{ taskId: string; results?: string[] }> {
-  const { mode, prompt, referenceImageUrl, size, n = 1 } = params;
+  const { mode, prompt, referenceImageUrl, referenceImageUrls, size, n = 1 } = params;
 
-  // 构建 messages content 数组
-  const content: Record<string, unknown>[] = [
-    { text: prompt },
-  ];
+  // Build content array: images first, then text
+  const content: Record<string, unknown>[] = [];
 
-  if (mode === "image-to-image" && referenceImageUrl) {
-    content.unshift({ image: referenceImageUrl });
+  if (mode === "image-to-image") {
+    // Support both single referenceImageUrl (backward compat) and array referenceImageUrls
+    const urls = referenceImageUrls?.length
+      ? referenceImageUrls
+      : referenceImageUrl
+        ? [referenceImageUrl]
+        : [];
+    for (const url of urls) {
+      if (url) content.push({ image: url });
+    }
   }
+
+  content.push({ text: prompt });
 
   const body = {
     model: config.id,

@@ -7,7 +7,6 @@ import {
   Loader2,
   Check,
   X,
-  ChevronRight,
   RotateCcw,
   Maximize2,
 } from 'lucide-react';
@@ -32,6 +31,8 @@ export default function StudioPage() {
   const [quantity, setQuantity] = useState(1);
   const [tryOnPrompt, setTryOnPrompt] = useState('');
   const [resultImages, setResultImages] = useState<string[]>([]);
+  // Ordered list of selected items (model + garments), first-clicked first
+  const [selectionOrder, setSelectionOrder] = useState<Array<{type: 'model'; id: string} | {type: 'garment'; id: string}>>([]);
 
   useEffect(() => {
     listModels().then(setModels);
@@ -42,7 +43,7 @@ export default function StudioPage() {
   // Auto-fill default prompt when garments selected
   useEffect(() => {
     if (!tryOnPrompt.trim() && selectedGarments.length > 0 && selectedModel) {
-      const gDescs = selectedGarments.map((g) => `${g.color}${g.style}${g.name}`).join("和");
+      const gDescs = selectedGarments.map((g) => `${g.color || ''}${g.style || ''}${g.name || '服装'}`).join("和");
       setTryOnPrompt(`给图中的人物换上${gDescs}，保持人物面貌、姿势、背景完全不变，只改变服装，照片级真实感`);
     }
   }, [selectedGarments, selectedModel]);
@@ -50,16 +51,33 @@ export default function StudioPage() {
   const toggleGarment = useCallback((garment: Garment) => {
     setSelectedGarments((prev) => {
       const exists = prev.find((g) => g.id === garment.id);
-      if (exists) return prev.filter((g) => g.id !== garment.id);
+      if (exists) {
+        setSelectionOrder((o) => o.filter((item) => !(item.type === 'garment' && item.id === garment.id)));
+        return prev.filter((g) => g.id !== garment.id);
+      }
+      setSelectionOrder((o) => [...o, { type: 'garment', id: garment.id }]);
       // Don't allow multiple items in the same category (except shoes/accessories)
       const sameCategory = prev.filter(
         (g) => g.category === garment.category && !['shoes', 'accessories'].includes(g.category)
       );
       if (sameCategory.length > 0) {
+        // Also remove old same-category garment from selectionOrder
+        sameCategory.forEach((g) => {
+          setSelectionOrder((o) => o.filter((item) => !(item.type === 'garment' && item.id === g.id)));
+        });
         return [...prev.filter((g) => g.category !== garment.category), garment];
       }
       return [...prev, garment];
     });
+  }, []);
+
+  const removeFromSelection = useCallback((type: 'model' | 'garment', id: string) => {
+    setSelectionOrder((prev) => prev.filter((item) => !(item.type === type && item.id === id)));
+    if (type === 'model') {
+      setSelectedModel(null);
+    } else {
+      setSelectedGarments((prev) => prev.filter((g) => g.id !== id));
+    }
   }, []);
 
   const handleGenerate = async () => {
@@ -124,7 +142,16 @@ export default function StudioPage() {
               <button
                 key={model.id}
                 onClick={() => {
-                  setSelectedModel(model);
+                  if (selectedModel?.id === model.id) {
+                    setSelectedModel(null);
+                    setSelectionOrder((prev) => prev.filter((item) => !(item.type === 'model' && item.id === model.id)));
+                  } else {
+                    setSelectedModel(model);
+                    setSelectionOrder((prev) => {
+                      const withoutModel = prev.filter((item) => item.type !== 'model');
+                      return [...withoutModel, { type: 'model', id: model.id }];
+                    });
+                  }
                   handleReset();
                 }}
                 className={cn(
@@ -196,7 +223,7 @@ export default function StudioPage() {
                   <div className="px-3 py-1.5 rounded-lg bg-black/50 backdrop-blur-sm">
                     <p className="text-xs text-white font-medium">{selectedModel?.name}</p>
                     <p className="text-[10px] text-white/60">
-                      {selectedGarments.map((g) => g.name).join(' + ')}
+                      {selectedGarments.map((g) => g.name || '未分类').join(' + ')}
                     </p>
                   </div>
                   <div className="px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm">
@@ -216,22 +243,35 @@ export default function StudioPage() {
                   从左侧选择模特，从右侧选择服装，然后点击生成
                 </p>
               </div>
-              {/* Before preview - model + selected garments */}
-              {selectedModel && (
+              {/* Before preview - items in selection order */}
+              {selectionOrder.length > 0 && (
                 <div className="mt-4 flex items-center gap-3">
-                  <div className="w-24 rounded-lg overflow-hidden border border-border">
-                    <img src={selectedModel.imageUrl} alt="" className="w-full aspect-[3/4] object-cover" />
-                  </div>
-                  {selectedGarments.length > 0 && (
-                    <>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                      {selectedGarments.map((g) => (
-                        <div key={g.id} className="w-24 rounded-lg overflow-hidden border border-border">
-                          <img src={g.imageUrl} alt={g.name} className="w-full aspect-square object-cover" />
-                        </div>
-                      ))}
-                    </>
-                  )}
+                  {selectionOrder.map((item) => {
+                    const data =
+                      item.type === 'model'
+                        ? selectedModel?.id === item.id ? selectedModel : null
+                        : selectedGarments.find((g) => g.id === item.id);
+                    if (!data) return null;
+                    const isModel = item.type === 'model';
+                    return (
+                      <div key={`${item.type}-${item.id}`} className="relative w-24 rounded-lg overflow-hidden border border-border group">
+                        <img
+                          src={data.imageUrl}
+                          alt={'name' in data ? data.name : ''}
+                          className={cn(
+                            'w-full object-cover',
+                            isModel ? 'aspect-[3/4]' : 'aspect-square'
+                          )}
+                        />
+                        <button
+                          onClick={() => removeFromSelection(item.type, item.id)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -312,7 +352,7 @@ export default function StudioPage() {
                     key={g.id}
                     className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-[10px] text-primary"
                   >
-                    {g.name}
+                    {g.name || '未分类'}
                     <button onClick={() => toggleGarment(g)}>
                       <X className="w-2.5 h-2.5" />
                     </button>

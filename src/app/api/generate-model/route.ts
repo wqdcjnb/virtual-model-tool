@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       mode,
       prompt,
       referenceImageUrl,
+      referenceImageUrls,
       size,
       n,
     } = body;
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
-      if (!referenceImageUrl) {
+      if (!referenceImageUrl && (!referenceImageUrls || referenceImageUrls.length === 0)) {
         return NextResponse.json(
           { success: false, message: "图生图模式请上传参考图" },
           { status: 400 }
@@ -94,6 +95,7 @@ export async function POST(request: Request) {
       mode: mode || "text-to-image",
       prompt: prompt.trim(),
       referenceImageUrl: referenceImageUrl || undefined,
+      referenceImageUrls: referenceImageUrls || undefined,
       size: size || config.maxResolution,
       n: safeN,
     });

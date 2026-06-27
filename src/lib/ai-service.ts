@@ -263,9 +263,15 @@ export async function generateTryOn(params: {
   if (!model) throw new Error("Model not found");
   if (!params.prompt) throw new Error("请输入描述文字");
 
-  const selectedModel = params.genModel || "flux-1.1-pro:stable";
+  const selectedModel = params.genModel || "wan2.7-image-pro";
   const n = Math.min(params.quantity || 1, 4);
   const config = getModelConfig(selectedModel);
+
+  // Build reference images: model first, then selected garments
+  const referenceImageUrls: string[] = [absoluteUrl(model.imageUrl)];
+  for (const g of selectedGarments) {
+    referenceImageUrls.push(absoluteUrl(g.imageUrl));
+  }
 
   const res = await fetch("/api/generate-model", {
     method: "POST",
@@ -275,6 +281,7 @@ export async function generateTryOn(params: {
       mode: "image-to-image",
       prompt: params.prompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
+      referenceImageUrls,
       size: config?.platform === "dashscope" ? "2048*2048" : (config?.maxResolution || "1024x1024"),
       n,
     }),

@@ -47,7 +47,7 @@ export default function GarmentsPage() {
   };
 
   const handleUpload = async () => {
-    if (!uploadForm.name || !uploadForm.color || !uploadForm.imageFile) return;
+    if (!uploadForm.imageFile) return;
     setUploading(true);
     try {
       // Upload image to server
@@ -70,7 +70,7 @@ export default function GarmentsPage() {
         name: uploadForm.name,
         category: uploadForm.category,
         color: uploadForm.color,
-        style: uploadForm.style || '休闲',
+        style: uploadForm.style || '',
         imageUrl: data.url,
       });
       refreshGarments();
@@ -169,7 +169,7 @@ export default function GarmentsPage() {
                 </button>
               </div>
               <div className="p-2.5">
-                <p className="text-xs font-medium text-foreground truncate">{garment.name}</p>
+                <p className="text-xs font-medium text-foreground truncate">{garment.name || '未分类'}</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-[10px] text-muted-foreground">{garment.color}</span>
                   <span className="text-[10px] text-muted-foreground">/</span>
@@ -304,7 +304,7 @@ export default function GarmentsPage() {
               </button>
               <button
                 onClick={handleUpload}
-                disabled={uploading || !uploadForm.name || !uploadForm.color || !uploadForm.imageFile}
+                disabled={uploading || !uploadForm.imageFile}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {uploading ? (

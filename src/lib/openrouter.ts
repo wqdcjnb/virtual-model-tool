@@ -3,7 +3,7 @@
  * 图生: POST /v1/images/generations (DALL-E 格式)
  * 文档: https://n1n.ai
  */
-const BASE = "https://llm-api.net/v1";
+const BASE = "https://api.n1n.ai/v1";
 
 function apiKey() {
   const key = process.env.OPENROUTER_API_KEY;
@@ -35,29 +35,37 @@ export async function generateImage(params: OpenRouterParams): Promise<{ results
   };
   if (referenceImageUrl) body.image = referenceImageUrl;
 
-  const res = await fetch(`${BASE}/images/generations`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey()}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
 
-  const data: ImgGenResponse = await res.json();
+  try {
+    const res = await fetch(`${BASE}/images/generations`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
 
-  if (data.error) {
-    throw new Error(`[n1n ${data.error.code}] ${data.error.message}`);
+    const data: ImgGenResponse = await res.json();
+
+    if (data.error) {
+      throw new Error(`[n1n ${data.error.code}] ${data.error.message}`);
+    }
+
+    const results: string[] = (data.data || [])
+      .map((d) => d.url || d.b64_json)
+      .filter(Boolean) as string[];
+
+    if (!results.length) {
+      throw new Error(`n1n 未返回图片 | response: ${JSON.stringify(data).substring(0, 200)}`);
+    }
+
+    console.log("[n1n] 图片生成成功:", { model, count: results.length });
+    return { results };
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const results: string[] = (data.data || [])
-    .map((d) => d.url || d.b64_json)
-    .filter(Boolean) as string[];
-
-  if (!results.length) {
-    throw new Error(`n1n 未返回图片 | response: ${JSON.stringify(data).substring(0, 200)}`);
-  }
-
-  console.log("[n1n] 图片生成成功:", { model, count: results.length });
-  return { results };
 }
