@@ -31,17 +31,6 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "DashScope Qwen 6张",
   },
   {
-    id: "nano-banana-pro",
-    name: "Nano Banana Pro",
-    group: "recommended",
-    platform: "cqt",
-    endpoint: "cqt-nano",
-    maxResolution: "1024*1024",
-    maxImages: 4,
-    supportsImageToImage: true,
-    description: "CQT 快速高质量",
-  },
-  {
     id: "gpt-image-2",
     name: "GPT Image 2",
     group: "recommended",
@@ -51,6 +40,17 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     maxImages: 1,
     supportsImageToImage: true,
     description: "LLM Relay GPT 图像生成",
+  },
+  {
+    id: "gemini-3-pro-image",
+    name: "Gemini 3 Pro Image",
+    group: "recommended",
+    platform: "n1n",
+    endpoint: "multimodal-generation",
+    maxResolution: "1024x1024",
+    maxImages: 1,
+    supportsImageToImage: true,
+    description: "n1n Gemini 图像生成",
   },
 ];
 

@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 import { createModelGenerationTask } from "@/lib/dashscope";
 import { createCQTModelTask } from "@/lib/cqt";
 import { generateImage } from "@/lib/openrouter";
-import { submitImageTask } from "@/lib/wuyinkeji";
+import { generateImageN1N } from "@/lib/n1n";
 import { getModelConfig } from "@/lib/constants";
 
 export async function POST(request: Request) {
@@ -73,6 +73,7 @@ export async function POST(request: Request) {
         prompt: prompt.trim(),
         referenceImageUrl: referenceImageUrl || undefined,
         referenceImageUrls: allRefs.length > 0 ? allRefs : undefined,
+        size: size || config.maxResolution,
       });
       console.log("[generate-model] OpenRouter:", { model, count: results.length });
       return NextResponse.json({ success: true, results, platform: "openrouter" });
@@ -94,20 +95,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, taskId, platform: "cqt", group });
     }
 
-    // ---- 无尽科技 平台 ----
-    if (config.platform === "wuyinkeji") {
+    // ---- n1n Gemini 平台 ----
+    if (config.platform === "n1n") {
       const allRefUrls = referenceImageUrls?.length
         ? referenceImageUrls
-        : referenceImageUrl
-          ? [referenceImageUrl]
-          : [];
-      const taskId = await submitImageTask({
+        : referenceImageUrl ? [referenceImageUrl] : [];
+      const { results } = await generateImageN1N({
+        model: config.id,
         prompt: prompt.trim(),
-        size: size || config.maxResolution,
         referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
+        size: size || config.maxResolution,
       });
-      console.log("[generate-model] 无尽科技 任务:", { model, taskId });
-      return NextResponse.json({ success: true, taskId, platform: "wuyinkeji" });
+      console.log("[generate-model] n1n:", { model, count: results.length });
+      return NextResponse.json({ success: true, results, platform: "n1n" });
     }
 
     // ---- DashScope 平台 ----

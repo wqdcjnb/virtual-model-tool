@@ -267,9 +267,16 @@ export async function generateTryOn(params: {
   const n = Math.min(params.quantity || 1, 4);
   const config = getModelConfig(selectedModel);
 
-  // Map aspect ratio to size
+  // Map aspect ratio to size (DashScope uses * separator)
   const ratio = params.aspectRatio || "3:4";
   const sizeMap: Record<string, string> = {
+    "1:1": "2048*2048",
+    "3:4": "1536*2048",
+    "4:3": "2048*1536",
+    "9:16": "1080*1920",
+    "16:9": "1920*1080",
+  };
+  const sizeMapX: Record<string, string> = {
     "1:1": "1024x1024",
     "3:4": "1024x1536",
     "4:3": "1536x1024",
@@ -277,8 +284,8 @@ export async function generateTryOn(params: {
     "16:9": "1792x1024",
   };
   const size = config?.platform === "dashscope"
-    ? "2048*2048"
-    : (sizeMap[ratio] || config?.maxResolution || "1024x1024");
+    ? (sizeMap[ratio] || "2048*2048")
+    : (sizeMapX[ratio] || config?.maxResolution || "1024x1024");
 
   // Build reference images: model first, then selected garments
   const referenceImageUrls: string[] = [absoluteUrl(model.imageUrl)];
@@ -286,13 +293,16 @@ export async function generateTryOn(params: {
     referenceImageUrls.push(absoluteUrl(g.imageUrl));
   }
 
+  // Always enforce person/scene/pose preservation
+  const fullPrompt = `${params.prompt.trim()}。必须严格保持原图中人物的面貌、姿势、背景完全不变，仅替换服装，照片级真实感。`;
+
   const res = await fetch("/api/generate-model", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: selectedModel,
       mode: "image-to-image",
-      prompt: params.prompt,
+      prompt: fullPrompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
       referenceImageUrls,
       size,
