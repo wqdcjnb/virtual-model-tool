@@ -33,6 +33,7 @@ export interface TryOnResult {
   garmentNames: string[];
   aiModel: string;
   resolution: string;
+  prompt?: string;
   createdAt: string;
 }
 

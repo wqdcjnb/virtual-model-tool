@@ -42,8 +42,8 @@ export default function StudioPage() {
   // Auto-fill default prompt when garments selected
   useEffect(() => {
     if (!tryOnPrompt.trim() && selectedGarments.length > 0 && selectedModel) {
-      const gNames = selectedGarments.map((g) => g.name).join("、");
-      setTryOnPrompt(`让图中的模特穿上${gNames}，保持人物面貌和背景环境不变，只更换服装，照片级真实感`);
+      const gDescs = selectedGarments.map((g) => `${g.color}${g.style}${g.name}`).join("和");
+      setTryOnPrompt(`给图中的人物换上${gDescs}，保持人物面貌、姿势、背景完全不变，只改变服装，照片级真实感`);
     }
   }, [selectedGarments, selectedModel]);
 

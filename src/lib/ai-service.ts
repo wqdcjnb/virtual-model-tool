@@ -306,6 +306,7 @@ export async function generateTryOn(params: {
     garmentNames: selectedGarments.map((g) => g.name),
     aiModel: selectedModel,
     resolution: "1024 x 1024",
+    prompt: params.prompt,
     createdAt: new Date().toISOString(),
   };
 

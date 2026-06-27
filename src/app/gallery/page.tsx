@@ -188,6 +188,14 @@ export default function GalleryPage() {
               />
             </div>
 
+            {/* Prompt */}
+            {selectedResult.prompt && (
+              <div className="px-6 py-2.5 border-t border-border bg-accent/20">
+                <p className="text-[10px] text-muted-foreground mb-1">生成描述</p>
+                <p className="text-xs text-foreground leading-relaxed">{selectedResult.prompt}</p>
+              </div>
+            )}
+
             {/* Details */}
             <div className="px-6 py-3 border-t border-border">
               <div className="flex items-center gap-4">
