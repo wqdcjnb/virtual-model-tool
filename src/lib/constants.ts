@@ -53,15 +53,15 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "OpenAI 最新图生模型",
   },
   {
-    id: "gpt-image-1",
-    name: "GPT Image 1",
+    id: "grok-imagine-image-pro",
+    name: "Grok Imagine Pro",
     group: "recommended",
     platform: "openrouter",
     endpoint: "multimodal-generation",
     maxResolution: "2048*2048",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "OpenAI 经典图生模型",
+    description: "Elon Musk 最新图生模型",
   },
 ];
 
