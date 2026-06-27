@@ -75,6 +75,9 @@ interface QueryTaskResponse {
     task_id?: string;
     task_status?: TaskStatus;
     results?: { url?: string }[];
+    image_url?: string;
+    message?: string;
+    code?: string;
   };
   code?: string;
   message?: string;
@@ -326,10 +329,17 @@ export async function queryTask(taskId: string): Promise<TaskResult> {
 
   const output = data.output;
   const status = output?.task_status || "PENDING";
-  const results =
-    output?.results
-      ?.map((r: { url?: string }) => r.url)
-      .filter(Boolean) as string[] || [];
+
+  // aitryon-plus returns output.image_url (single), other APIs return output.results[].url
+  const results: string[] = [];
+  if (output?.image_url) {
+    results.push(output.image_url);
+  }
+  if (output?.results) {
+    for (const r of output.results) {
+      if (r.url) results.push(r.url);
+    }
+  }
 
   // 构建详细错误信息
   let message: string | undefined;

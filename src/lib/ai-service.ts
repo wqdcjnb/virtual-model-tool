@@ -263,20 +263,25 @@ export async function generateTryOn(params: {
   if (!model) throw new Error("Model not found");
   if (!params.prompt) throw new Error("请输入描述文字");
 
-  const garmentNames = selectedGarments.map((g) => g.name).join("和");
+  // Map garment categories
+  const topGarment = selectedGarments.find(
+    (g) => g.category === "top" || g.category === "dress" || g.category === "outerwear"
+  );
+  const bottomGarment = selectedGarments.find(
+    (g) => g.category === "bottom"
+  );
   const n = Math.min(params.quantity || 1, 4);
-  const selectedModel = params.genModel || "nano-banana-pro";
 
-  const res = await fetch("/api/generate-model", {
+  const res = await fetch("/api/try-on", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: selectedModel,
-      mode: "image-to-image",
-      prompt: params.prompt,
-      referenceImageUrl: absoluteUrl(model.imageUrl),
-      size: "1024*1024",
-      n,
+      model: "aitryon-plus",
+      personImageUrl: absoluteUrl(model.imageUrl),
+      topGarmentUrl: topGarment ? absoluteUrl(topGarment.imageUrl) : undefined,
+      bottomGarmentUrl: bottomGarment ? absoluteUrl(bottomGarment.imageUrl) : undefined,
+      resolution: -1,
+      restoreFace: true,
     }),
   });
 
@@ -288,7 +293,7 @@ export async function generateTryOn(params: {
   if (data.results?.length) {
     allUrls = data.results;
   } else if (data.taskId) {
-    allUrls = await pollTask(data.taskId, data.platform, data.group);
+    allUrls = await pollTask(data.taskId, "dashscope");
   } else {
     throw new Error("未获取到任务ID或结果");
   }
@@ -304,8 +309,8 @@ export async function generateTryOn(params: {
     imageUrls: allUrls,
     modelName: model.name,
     garmentNames: selectedGarments.map((g) => g.name),
-    aiModel: selectedModel,
-    resolution: "1024 x 1024",
+    aiModel: "aitryon-plus",
+    resolution: "1080 x 1920",
     prompt: params.prompt,
     createdAt: new Date().toISOString(),
   };
