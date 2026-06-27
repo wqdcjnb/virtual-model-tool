@@ -10,7 +10,7 @@ import type { ModelConfig } from "./types";
 export const MODEL_CONFIGS: ModelConfig[] = [
   {
     id: "aitryon-plus",
-    name: "AI 试衣 Plus",
+    name: "aitryon-plus",
     group: "recommended",
     platform: "dashscope",
     endpoint: "multimodal-generation",
