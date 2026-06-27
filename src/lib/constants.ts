@@ -42,15 +42,15 @@ export const MODEL_CONFIGS: ModelConfig[] = [
     description: "CQT 快速高质量",
   },
   {
-    id: "gpt-image-2:stable",
+    id: "gpt-image-2",
     name: "GPT Image 2",
     group: "recommended",
-    platform: "openrouter",
+    platform: "wuyinkeji",
     endpoint: "multimodal-generation",
-    maxResolution: "1024x1024",
+    maxResolution: "1:1",
     maxImages: 1,
     supportsImageToImage: true,
-    description: "n1n GPT 图像生成",
+    description: "无尽科技 GPT 图像生成",
   },
 ];
 

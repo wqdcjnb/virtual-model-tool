@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { queryTask as queryDashScopeTask } from "@/lib/dashscope";
 import { queryCQTTask } from "@/lib/cqt";
+import { queryImageTask } from "@/lib/wuyinkeji";
 
 export async function GET(
   request: Request,
@@ -23,6 +24,16 @@ export async function GET(
     // 通过 query param 区分：?platform=cqt&group=flux
     const url = new URL(request.url);
     const platform = url.searchParams.get("platform") || "dashscope";
+
+    if (platform === "wuyinkeji") {
+      const detail = await queryImageTask(taskId);
+      return NextResponse.json({
+        success: true,
+        status: detail.status === 2 ? "SUCCEEDED" as const : detail.status === 0 ? "PENDING" as const : "FAILED" as const,
+        results: detail.result || [],
+        message: detail.message,
+      });
+    }
 
     if (platform === "cqt") {
       const group = (url.searchParams.get("group") || "flux") as "nano" | "flux";

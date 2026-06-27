@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { createModelGenerationTask } from "@/lib/dashscope";
 import { createCQTModelTask } from "@/lib/cqt";
 import { generateImage } from "@/lib/openrouter";
+import { submitImageTask } from "@/lib/wuyinkeji";
 import { getModelConfig } from "@/lib/constants";
 
 export async function POST(request: Request) {
@@ -87,6 +88,22 @@ export async function POST(request: Request) {
 
       console.log("[generate-model] CQT 任务:", { model, group, taskId });
       return NextResponse.json({ success: true, taskId, platform: "cqt", group });
+    }
+
+    // ---- 无尽科技 平台 ----
+    if (config.platform === "wuyinkeji") {
+      const allRefUrls = referenceImageUrls?.length
+        ? referenceImageUrls
+        : referenceImageUrl
+          ? [referenceImageUrl]
+          : [];
+      const taskId = await submitImageTask({
+        prompt: prompt.trim(),
+        size: size || config.maxResolution,
+        referenceImageUrls: allRefUrls.length > 0 ? allRefUrls : undefined,
+      });
+      console.log("[generate-model] 无尽科技 任务:", { model, taskId });
+      return NextResponse.json({ success: true, taskId, platform: "wuyinkeji" });
     }
 
     // ---- DashScope 平台 ----
