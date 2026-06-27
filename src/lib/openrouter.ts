@@ -5,7 +5,7 @@
  */
 import type { TaskStatus } from "./types";
 
-const BASE = "https://openrouter.ai/api/v1";
+const BASE = "https://llm-api.net/v1";
 const SITE_URL = "http://8.134.18.54";
 const SITE_NAME = "AI Virtual Try-On Studio";
 
