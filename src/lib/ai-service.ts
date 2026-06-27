@@ -265,6 +265,7 @@ export async function generateTryOn(params: {
 
   const selectedModel = params.genModel || "flux-1.1-pro:stable";
   const n = Math.min(params.quantity || 1, 4);
+  const config = getModelConfig(selectedModel);
 
   const res = await fetch("/api/generate-model", {
     method: "POST",
@@ -274,7 +275,7 @@ export async function generateTryOn(params: {
       mode: "image-to-image",
       prompt: params.prompt,
       referenceImageUrl: absoluteUrl(model.imageUrl),
-      size: "1024x1024",
+      size: config?.maxResolution || "1024x1024",
       n,
     }),
   });
